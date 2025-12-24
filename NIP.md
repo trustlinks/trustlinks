@@ -41,13 +41,26 @@ Kind 4101 jest używany do publikowania ocen reputacji dla innych użytkowników
 
 Pole `content` może zawierać opcjonalny komentarz tekstowy wyjaśniający powód nadania danej oceny. Może być puste.
 
-### Mechanizm agregacji reputacji
+### Mechanizm agregacji reputacji - Web of Trust
 
-Klienci implementujące ten NIP powinni:
+Klienci implementujące ten NIP powinny wyświetlać reputację w następującej hierarchii:
 
-1. **Własna reputacja użytkownika** - Wyświetlać jako pierwszą reputację nadaną przez zalogowanego użytkownika dla danej osoby
-2. **Reputacja z sieci zaufania** - Następnie wyświetlać reputacje nadane przez osoby, którym sam użytkownik nadał pozytywną reputację (rating >= 4)
-3. **Agregacja** - Obliczać średnią ważoną, gdzie reputacje z bezpośredniej sieci zaufania mają większą wagę
+1. **Poziom 1 - Moja ocena realności osoby**
+   - Bezpośrednia ocena nadana przez zalogowanego użytkownika
+   - Najwyższy priorytet wyświetlania
+
+2. **Poziom 2 - Oceny od bezpośrednio zweryfikowanych osób**
+   - Reputacje nadane przez osoby, którym JA nadałem status "realnej osoby" (rating >= 4)
+   - Wyświetlać średnią i liczbę ocen
+
+3. **Poziom 3 - Sieć drugiego stopnia**
+   - Reputacje nadane przez osoby zweryfikowane przez moją bezpośrednią sieć zaufania
+   - Osoby, którym osoby z poziomu 2 nadały status realności (rating >= 4)
+   - Wyświetlać średnią i liczbę ocen
+
+4. **Poziom 4 - Łączna liczba pozytywnych ocen**
+   - Suma wszystkich pozytywnych ocen (rating >= 4) z całej sieci
+   - Wyświetlać jako wskaźnik ogólnej popularności/zaufania
 
 ### Przykład zapytania
 

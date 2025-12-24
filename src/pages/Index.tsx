@@ -27,16 +27,16 @@ const Index = () => {
               <Shield className="h-4 w-4" />
               Zbudowane na protokole Nostr
             </div>
-            
+
             <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 dark:text-white leading-tight">
               Reputacja na{" "}
               <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 Żywo
               </span>
             </h1>
-            
+
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Buduj sieć zaufania podczas konferencji, meetupów i wydarzeń społeczności. 
+              Buduj sieć zaufania podczas konferencji, meetupów i wydarzeń społeczności.
               Nadawaj reputację w czasie rzeczywistym i odkrywaj wartościowych członków społeczności.
             </p>
           </div>
@@ -60,10 +60,10 @@ const Index = () => {
                 <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Sieć Zaufania
+                Web of Trust
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Zobacz reputację nadaną przez osoby, którym sam ufasz
+                4-poziomowa sieć zaufania z priorytetem dla Twoich weryfikacji
               </p>
             </div>
 
@@ -83,7 +83,7 @@ const Index = () => {
           {/* CTA */}
           <div className="mt-12 space-y-4">
             <LoginArea className="flex w-full max-w-md mx-auto" />
-            
+
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Współpracuje z Amethyst i innymi klientami Nostr
             </p>

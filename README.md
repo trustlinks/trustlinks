@@ -12,13 +12,25 @@ Aplikacja do żywego zarządzania reputacją na protokole Nostr, zaprojektowana 
 
 ## 🎯 Jak to działa
 
-### Hierarchia wyświetlania reputacji
+### Hierarchia wyświetlania reputacji - Web of Trust
 
-Gdy przeglądasz profil użytkownika, reputacja jest wyświetlana w następującej kolejności:
+Gdy przeglądasz profil użytkownika, reputacja jest wyświetlana w następującej hierarchii:
 
-1. **Twoja reputacja** - Ocena, którą Ty nadałeś użytkownikowi (wyświetlana jako pierwsza)
-2. **Reputacja z sieci zaufania** - Średnia ocen nadanych przez osoby, którym Ty nadałeś wysoką reputację (≥4/5)
-3. **Ogólna reputacja** - Średnia wszystkich ocen z całej sieci
+1. **Poziom 1 - Twoja ocena realności**
+   - Twoja bezpośrednia ocena tej osoby
+   - Najważniejszy poziom - czy TY uważasz tę osobę za realną
+
+2. **Poziom 2 - Osoby przez Ciebie zweryfikowane**
+   - Średnia ocen od osób, którym TY nadałeś status realności (≥4/5)
+   - Twoja bezpośrednia sieć zaufania
+
+3. **Poziom 3 - Sieć drugiego stopnia**
+   - Oceny od osób zweryfikowanych przez Twoją sieć zaufania
+   - Rozszerzona sieć Web of Trust
+
+4. **Poziom 4 - Łączna liczba pozytywnych ocen**
+   - Suma wszystkich pozytywnych weryfikacji (≥4/5) z całej sieci
+   - Wskaźnik ogólnego zaufania społeczności
 
 ### Skala ocen
 

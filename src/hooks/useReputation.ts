@@ -27,9 +27,9 @@ export function useReputation(pubkey: string) {
     queryKey: ['reputation', pubkey],
     queryFn: async (c) => {
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
-      
+
       const events = await nostr.query(
-        [{ 
+        [{
           kinds: [4101],
           '#p': [pubkey],
           limit: 200
@@ -52,9 +52,9 @@ export function useMyReputation(targetPubkey: string, myPubkey?: string) {
       if (!myPubkey) return null;
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(2000)]);
-      
+
       const events = await nostr.query(
-        [{ 
+        [{
           kinds: [4101],
           authors: [myPubkey],
           '#p': [targetPubkey],
@@ -80,9 +80,9 @@ export function useTrustedReputation(targetPubkey: string, trustedPubkeys: strin
       if (trustedPubkeys.length === 0) return [];
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
-      
+
       const events = await nostr.query(
-        [{ 
+        [{
           kinds: [4101],
           authors: trustedPubkeys,
           '#p': [targetPubkey],
@@ -98,6 +98,33 @@ export function useTrustedReputation(targetPubkey: string, trustedPubkeys: strin
   });
 }
 
+export function useSecondDegreeReputation(targetPubkey: string, secondDegreePubkeys: string[]) {
+  const { nostr } = useNostr();
+
+  return useQuery({
+    queryKey: ['second-degree-reputation', targetPubkey, secondDegreePubkeys],
+    queryFn: async (c) => {
+      if (secondDegreePubkeys.length === 0) return [];
+
+      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+
+      const events = await nostr.query(
+        [{
+          kinds: [4101],
+          authors: secondDegreePubkeys,
+          '#p': [targetPubkey],
+          limit: 100
+        }],
+        { signal }
+      );
+
+      return events.filter(validateReputationEvent);
+    },
+    enabled: secondDegreePubkeys.length > 0,
+    staleTime: 30000,
+  });
+}
+
 export function useReputationGivenBy(authorPubkey: string) {
   const { nostr } = useNostr();
 
@@ -105,9 +132,9 @@ export function useReputationGivenBy(authorPubkey: string) {
     queryKey: ['reputation-given-by', authorPubkey],
     queryFn: async (c) => {
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
-      
+
       const events = await nostr.query(
-        [{ 
+        [{
           kinds: [4101],
           authors: [authorPubkey],
           limit: 100
@@ -121,6 +148,32 @@ export function useReputationGivenBy(authorPubkey: string) {
   });
 }
 
+export function useReputationsGivenByMultiple(authorPubkeys: string[]) {
+  const { nostr } = useNostr();
+
+  return useQuery({
+    queryKey: ['reputations-given-by-multiple', authorPubkeys],
+    queryFn: async (c) => {
+      if (authorPubkeys.length === 0) return [];
+
+      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(5000)]);
+
+      const events = await nostr.query(
+        [{
+          kinds: [4101],
+          authors: authorPubkeys,
+          limit: 500
+        }],
+        { signal }
+      );
+
+      return events.filter(validateReputationEvent);
+    },
+    enabled: authorPubkeys.length > 0,
+    staleTime: 60000,
+  });
+}
+
 export interface ReputationStats {
   total: number;
   average: number;
@@ -128,12 +181,16 @@ export interface ReputationStats {
   myRating?: number;
   trustedAverage?: number;
   trustedCount: number;
+  secondDegreeAverage?: number;
+  secondDegreeCount: number;
+  positiveCount: number;
 }
 
 export function calculateReputationStats(
   allReputations: ReputationEvent[],
   myReputation?: ReputationEvent | null,
-  trustedReputations?: ReputationEvent[]
+  trustedReputations?: ReputationEvent[],
+  secondDegreeReputations?: ReputationEvent[]
 ): ReputationStats {
   const distribution: Record<number, number> = {
     '-1': 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0
@@ -141,12 +198,16 @@ export function calculateReputationStats(
 
   let total = 0;
   let sum = 0;
+  let positiveCount = 0;
 
   allReputations.forEach(event => {
     const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
     distribution[rating] = (distribution[rating] || 0) + 1;
     sum += rating;
     total++;
+    if (rating >= 4) {
+      positiveCount++;
+    }
   });
 
   const average = total > 0 ? sum / total : 0;
@@ -168,12 +229,27 @@ export function calculateReputationStats(
     trustedAverage = trustedCount > 0 ? trustedSum / trustedCount : undefined;
   }
 
+  let secondDegreeAverage: number | undefined;
+  let secondDegreeCount = 0;
+  if (secondDegreeReputations && secondDegreeReputations.length > 0) {
+    let secondDegreeSum = 0;
+    secondDegreeReputations.forEach(event => {
+      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+      secondDegreeSum += rating;
+      secondDegreeCount++;
+    });
+    secondDegreeAverage = secondDegreeCount > 0 ? secondDegreeSum / secondDegreeCount : undefined;
+  }
+
   return {
     total,
     average,
     distribution,
     myRating,
     trustedAverage,
-    trustedCount
+    trustedCount,
+    secondDegreeAverage,
+    secondDegreeCount,
+    positiveCount
   };
 }
