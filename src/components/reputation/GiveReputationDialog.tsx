@@ -24,12 +24,11 @@ interface GiveReputationDialogProps {
 
 export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputationDialogProps) {
   const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState(currentRating ?? 5);
-  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
+  const [rating, setRating] = useState(currentRating ?? 1);
   const [context, setContext] = useState("");
   const [tag, setTag] = useState("conference");
   const [comment, setComment] = useState("");
-  
+
   const { giveReputation, isPending } = useGiveReputation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -46,12 +45,12 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
 
       toast({
         title: "Reputacja nadana!",
-        description: `Nadano ocenę ${rating}/5`,
+        description: rating === 1 ? "Osoba oznaczona jako realna" : "Osoba oznaczona jako nierealna",
       });
 
       queryClient.invalidateQueries({ queryKey: ['reputation', targetPubkey] });
       queryClient.invalidateQueries({ queryKey: ['my-reputation', targetPubkey] });
-      
+
       setOpen(false);
       setComment("");
       setContext("");
@@ -65,75 +64,60 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
     }
   };
 
-  const ratingLabels = {
-    '-1': 'Bardzo negatywna',
-    '0': 'Neutralna',
-    '1': 'Słaba',
-    '2': 'Przeciętna',
-    '3': 'Dobra',
-    '4': 'Bardzo dobra',
-    '5': 'Doskonała'
-  };
 
-  const displayRating = hoveredRating !== null ? hoveredRating : rating;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
           <Star className="h-4 w-4 mr-2" />
-          {currentRating !== undefined ? 'Aktualizuj' : 'Nadaj reputację'}
+          {currentRating !== undefined ? 'Aktualizuj weryfikację' : 'Zweryfikuj'}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Nadaj reputację</DialogTitle>
+          <DialogTitle>Zweryfikuj użytkownika</DialogTitle>
           <DialogDescription>
-            Oceń tego użytkownika w skali od -1 do 5
+            Określ czy ta osoba jest realna czy nierealna
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
-          {/* Rating Stars */}
+          {/* Binary Rating */}
           <div className="space-y-3">
-            <Label>Ocena: {ratingLabels[displayRating as keyof typeof ratingLabels]}</Label>
-            <div className="flex items-center gap-2">
-              {[-1, 0, 1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRating(value)}
-                  onMouseEnter={() => setHoveredRating(value)}
-                  onMouseLeave={() => setHoveredRating(null)}
-                  className="transition-transform hover:scale-110 focus:outline-none"
-                >
-                  {value === -1 ? (
-                    <Star
-                      className={`h-8 w-8 ${
-                        displayRating === -1
-                          ? 'fill-red-500 text-red-500'
-                          : 'text-gray-300 dark:text-gray-600'
-                      }`}
-                    />
-                  ) : value === 0 ? (
-                    <Star
-                      className={`h-8 w-8 ${
-                        displayRating >= 0
-                          ? 'fill-gray-400 text-gray-400'
-                          : 'text-gray-300 dark:text-gray-600'
-                      }`}
-                    />
-                  ) : (
-                    <Star
-                      className={`h-8 w-8 ${
-                        displayRating >= value
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300 dark:text-gray-600'
-                      }`}
-                    />
-                  )}
-                </button>
-              ))}
+            <Label>Status weryfikacji</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setRating(1)}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  rating === 1
+                    ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-3xl">✓</div>
+                  <span className="font-semibold text-green-700 dark:text-green-400">Realny</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Zweryfikowana osoba</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRating(0)}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  rating === 0
+                    ? 'border-red-500 bg-red-50 dark:bg-red-950/30'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-red-300'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-3xl">✗</div>
+                  <span className="font-semibold text-red-700 dark:text-red-400">Nierealny</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Bot lub fake</span>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -176,12 +160,12 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
             Anuluj
           </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             disabled={isPending}
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           >
-            {isPending ? 'Wysyłanie...' : 'Nadaj reputację'}
+            {isPending ? 'Wysyłanie...' : 'Zweryfikuj użytkownika'}
           </Button>
         </DialogFooter>
       </DialogContent>

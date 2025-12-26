@@ -26,23 +26,16 @@ function ReputationItem({ authorPubkey, rating, context, tag, content, createdAt
   const profileImage = metadata?.picture;
   const npub = nip19.npubEncode(authorPubkey);
 
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.max(0, Math.floor(rating));
-    
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <Star
-          key={i}
-          className={`h-3 w-3 ${
-            i < fullStars
-              ? 'fill-yellow-400 text-yellow-400'
-              : 'text-gray-300 dark:text-gray-600'
-          }`}
-        />
-      );
-    }
-    return stars;
+  const renderVerificationBadge = (rating: number) => {
+    return rating === 1 ? (
+      <Badge className="bg-green-600 hover:bg-green-700 text-white">
+        ✓ Realny
+      </Badge>
+    ) : (
+      <Badge variant="destructive">
+        ✗ Nierealny
+      </Badge>
+    );
   };
 
   const date = new Date(createdAt * 1000).toLocaleDateString('pl-PL', {
@@ -74,13 +67,7 @@ function ReputationItem({ authorPubkey, rating, context, tag, content, createdAt
                   {npub.slice(0, 16)}...{npub.slice(-8)}
                 </p>
               </div>
-              <Badge className="bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0">
-                {rating}/5
-              </Badge>
-            </div>
-
-            <div className="flex gap-1">
-              {renderStars(rating)}
+              {renderVerificationBadge(rating)}
             </div>
 
             {content && (

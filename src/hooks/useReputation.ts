@@ -14,8 +14,8 @@ function validateReputationEvent(event: NostrEvent): event is ReputationEvent {
 
   if (!pTag || !rating) return false;
 
-  const ratingNum = parseInt(rating);
-  if (isNaN(ratingNum) || ratingNum < -1 || ratingNum > 5) return false;
+  // Rating must be either "1" (real) or "0" (not real)
+  if (rating !== '0' && rating !== '1') return false;
 
   return true;
 }
@@ -230,18 +230,17 @@ export function useReputationsGivenByMultiple(authorPubkeys: string[]) {
 
 export interface ReputationStats {
   total: number;
-  average: number;
-  distribution: Record<number, number>;
+  realCount: number;
+  notRealCount: number;
   myRating?: number;
-  trustedAverage?: number;
-  trustedCount: number;
-  secondDegreeAverage?: number;
-  secondDegreeCount: number;
-  thirdDegreeAverage?: number;
-  thirdDegreeCount: number;
-  fourthDegreeAverage?: number;
-  fourthDegreeCount: number;
-  positiveCount: number;
+  trustedRealCount: number;
+  trustedNotRealCount: number;
+  secondDegreeRealCount: number;
+  secondDegreeNotRealCount: number;
+  thirdDegreeRealCount: number;
+  thirdDegreeNotRealCount: number;
+  fourthDegreeRealCount: number;
+  fourthDegreeNotRealCount: number;
 }
 
 export function calculateReputationStats(
@@ -252,92 +251,89 @@ export function calculateReputationStats(
   thirdDegreeReputations?: ReputationEvent[],
   fourthDegreeReputations?: ReputationEvent[]
 ): ReputationStats {
-  const distribution: Record<number, number> = {
-    '-1': 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0
-  };
-
   let total = 0;
-  let sum = 0;
-  let positiveCount = 0;
+  let realCount = 0;
+  let notRealCount = 0;
 
   allReputations.forEach(event => {
     const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-    distribution[rating] = (distribution[rating] || 0) + 1;
-    sum += rating;
     total++;
-    if (rating >= 4) {
-      positiveCount++;
+    if (rating === 1) {
+      realCount++;
+    } else {
+      notRealCount++;
     }
   });
-
-  const average = total > 0 ? sum / total : 0;
 
   let myRating: number | undefined;
   if (myReputation) {
     myRating = parseInt(myReputation.tags.find(([name]) => name === 'rating')?.[1] || '0');
   }
 
-  let trustedAverage: number | undefined;
-  let trustedCount = 0;
+  let trustedRealCount = 0;
+  let trustedNotRealCount = 0;
   if (trustedReputations && trustedReputations.length > 0) {
-    let trustedSum = 0;
     trustedReputations.forEach(event => {
       const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      trustedSum += rating;
-      trustedCount++;
+      if (rating === 1) {
+        trustedRealCount++;
+      } else {
+        trustedNotRealCount++;
+      }
     });
-    trustedAverage = trustedCount > 0 ? trustedSum / trustedCount : undefined;
   }
 
-  let secondDegreeAverage: number | undefined;
-  let secondDegreeCount = 0;
+  let secondDegreeRealCount = 0;
+  let secondDegreeNotRealCount = 0;
   if (secondDegreeReputations && secondDegreeReputations.length > 0) {
-    let secondDegreeSum = 0;
     secondDegreeReputations.forEach(event => {
       const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      secondDegreeSum += rating;
-      secondDegreeCount++;
+      if (rating === 1) {
+        secondDegreeRealCount++;
+      } else {
+        secondDegreeNotRealCount++;
+      }
     });
-    secondDegreeAverage = secondDegreeCount > 0 ? secondDegreeSum / secondDegreeCount : undefined;
   }
 
-  let thirdDegreeAverage: number | undefined;
-  let thirdDegreeCount = 0;
+  let thirdDegreeRealCount = 0;
+  let thirdDegreeNotRealCount = 0;
   if (thirdDegreeReputations && thirdDegreeReputations.length > 0) {
-    let thirdDegreeSum = 0;
     thirdDegreeReputations.forEach(event => {
       const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      thirdDegreeSum += rating;
-      thirdDegreeCount++;
+      if (rating === 1) {
+        thirdDegreeRealCount++;
+      } else {
+        thirdDegreeNotRealCount++;
+      }
     });
-    thirdDegreeAverage = thirdDegreeCount > 0 ? thirdDegreeSum / thirdDegreeCount : undefined;
   }
 
-  let fourthDegreeAverage: number | undefined;
-  let fourthDegreeCount = 0;
+  let fourthDegreeRealCount = 0;
+  let fourthDegreeNotRealCount = 0;
   if (fourthDegreeReputations && fourthDegreeReputations.length > 0) {
-    let fourthDegreeSum = 0;
     fourthDegreeReputations.forEach(event => {
       const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      fourthDegreeSum += rating;
-      fourthDegreeCount++;
+      if (rating === 1) {
+        fourthDegreeRealCount++;
+      } else {
+        fourthDegreeNotRealCount++;
+      }
     });
-    fourthDegreeAverage = fourthDegreeCount > 0 ? fourthDegreeSum / fourthDegreeCount : undefined;
   }
 
   return {
     total,
-    average,
-    distribution,
+    realCount,
+    notRealCount,
     myRating,
-    trustedAverage,
-    trustedCount,
-    secondDegreeAverage,
-    secondDegreeCount,
-    thirdDegreeAverage,
-    thirdDegreeCount,
-    fourthDegreeAverage,
-    fourthDegreeCount,
-    positiveCount
+    trustedRealCount,
+    trustedNotRealCount,
+    secondDegreeRealCount,
+    secondDegreeNotRealCount,
+    thirdDegreeRealCount,
+    thirdDegreeNotRealCount,
+    fourthDegreeRealCount,
+    fourthDegreeNotRealCount,
   };
 }

@@ -17,40 +17,40 @@ Aplikacja do żywego zarządzania reputacją na protokole Nostr, zaprojektowana 
 Gdy przeglądasz profil użytkownika, reputacja jest wyświetlana w następującej hierarchii (6 poziomów):
 
 1. **Poziom 1 - Twoja ocena realności**
-   - Twoja bezpośrednia ocena tej osoby
-   - Najważniejszy poziom - czy TY uważasz tę osobę za realną
+   - Twoja bezpośrednia weryfikacja tej osoby
+   - Najważniejszy poziom - czy TY uważasz tę osobę za realną (✓/✗)
 
 2. **Poziom 2 - Osoby przez Ciebie zweryfikowane**
-   - Średnia ocen od osób, którym TY nadałeś status realności (≥4/5)
+   - Weryfikacje od osób, którym TY nadałeś status realności (✓ Realny)
    - Twoja bezpośrednia sieć zaufania
+   - Pokazuje: ✓ X realnych / ✗ Y nierealnych
 
 3. **Poziom 3 - Sieć drugiego stopnia**
-   - Oceny od osób zweryfikowanych przez Twoją sieć zaufania
+   - Weryfikacje od osób zweryfikowanych przez Twoją sieć zaufania
    - Rozszerzona sieć Web of Trust
+   - Pokazuje: ✓ X / ✗ Y
 
 4. **Poziom 4 - Sieć trzeciego stopnia**
-   - Oceny od osób zweryfikowanych przez sieć drugiego stopnia
+   - Weryfikacje od osób zweryfikowanych przez sieć drugiego stopnia
    - Dalsze rozszerzenie Web of Trust
+   - Pokazuje: ✓ X / ✗ Y
 
 5. **Poziom 5 - Sieć czwartego stopnia**
-   - Oceny od osób zweryfikowanych przez sieć trzeciego stopnia
+   - Weryfikacje od osób zweryfikowanych przez sieć trzeciego stopnia
    - Maksymalne rozszerzenie Web of Trust
+   - Pokazuje: ✓ X / ✗ Y
 
 6. **Poziom 6 - Łączna liczba pozytywnych ocen**
-   - Suma wszystkich pozytywnych weryfikacji (≥4/5) z całej sieci
+   - Suma wszystkich weryfikacji z całej sieci
    - Wskaźnik ogólnego zaufania społeczności
+   - Pokazuje: ✓ X realnych / ✗ Y nierealnych
 
-### Skala ocen
+### System weryfikacji
 
-Reputacja jest oceniana w skali od -1 do 5:
+Weryfikacja jest binarna - prosta i czytelna:
 
-- **-1** - Bardzo negatywna
-- **0** - Neutralna
-- **1** - Słaba
-- **2** - Przeciętna
-- **3** - Dobra
-- **4** - Bardzo dobra
-- **5** - Doskonała
+- **✓ Realny** (1) - Zweryfikowana osoba, spotkana osobiście lub potwierdzona jako prawdziwa
+- **✗ Nierealny** (0) - Bot, fake account, lub niesprawdzona tożsamość
 
 ## 🚀 Rozpoczęcie pracy
 
@@ -65,15 +65,17 @@ Reputacja jest oceniana w skali od -1 do 5:
 2. Wprowadź npub, nprofile lub hex pubkey użytkownika
 3. Zobacz pełną reputację użytkownika
 
-### Nadawanie reputacji
+### Weryfikacja użytkowników
 
-1. Po znalezieniu użytkownika kliknij "Nadaj reputację"
-2. Wybierz ocenę od -1 do 5
+1. Po znalezieniu użytkownika kliknij "Zweryfikuj"
+2. Wybierz status:
+   - **✓ Realny** - Zweryfikowana osoba (spotkana osobiście, potwierdzona tożsamość)
+   - **✗ Nierealny** - Bot, fake account, lub niesprawdzona tożsamość
 3. Opcjonalnie dodaj:
    - **Kategorię** (np. "conference", "meetup")
    - **Wydarzenie** (np. "Baltic Honeybadger 2025")
-   - **Komentarz** wyjaśniający Twoją ocenę
-4. Kliknij "Nadaj reputację"
+   - **Komentarz** wyjaśniający weryfikację
+4. Kliknij "Zweryfikuj użytkownika"
 
 ### Przeglądanie reputacji
 
@@ -97,10 +99,10 @@ Aplikacja wykorzystuje **Kind 4101** dla wydarzeń reputacji z następującymi t
 ```json
 {
   "kind": 4101,
-  "content": "Opcjonalny komentarz",
+  "content": "Spotkałem osobiście na konferencji",
   "tags": [
     ["p", "<pubkey-otrzymującego>"],
-    ["rating", "5"],
+    ["rating", "1"],
     ["t", "conference"],
     ["context", "Baltic Honeybadger 2025"]
   ]

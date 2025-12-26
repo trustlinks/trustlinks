@@ -25,12 +25,12 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
   const { data: myGivenReputations } = useReputationGivenBy(user?.pubkey || '');
 
-  // Level 1: People I directly verified as real (rating >= 4)
+  // Level 1: People I directly verified as real (rating === 1)
   const trustedPubkeys = useMemo(() => {
     return (myGivenReputations || [])
       .filter(event => {
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating >= 4;
+        return rating === 1; // Only "real" ratings
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk);
@@ -47,7 +47,7 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
     return trustedNetworkReputations
       .filter(event => {
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating >= 4;
+        return rating === 1; // Only "real" ratings
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk && !trustedPubkeys.includes(pk) && pk !== user?.pubkey);
@@ -66,7 +66,7 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
     return secondDegreeNetworkReputations
       .filter(event => {
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating >= 4;
+        return rating === 1; // Only "real" ratings
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk && !allPreviousPubkeys.includes(pk) && pk !== user?.pubkey);
@@ -85,7 +85,7 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
     return thirdDegreeNetworkReputations
       .filter(event => {
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating >= 4;
+        return rating === 1; // Only "real" ratings
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk && !allPreviousPubkeys.includes(pk) && pk !== user?.pubkey);
@@ -109,23 +109,16 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
   const npub = nip19.npubEncode(pubkey);
 
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.max(0, Math.floor(rating));
-
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <Star
-          key={i}
-          className={`h-4 w-4 ${
-            i < fullStars
-              ? 'fill-yellow-400 text-yellow-400'
-              : 'text-gray-300 dark:text-gray-600'
-          }`}
-        />
-      );
-    }
-    return stars;
+  const renderVerificationBadge = (isReal: boolean) => {
+    return isReal ? (
+      <Badge className="bg-green-600 hover:bg-green-700 text-white">
+        ✓ Realny
+      </Badge>
+    ) : (
+      <Badge variant="destructive">
+        ✗ Nierealny
+      </Badge>
+    );
   };
 
   if (author.isLoading || isLoadingAll) {
@@ -185,126 +178,135 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
         {/* Level 1: My Rating */}
         {stats.myRating !== undefined && (
           <div className="bg-purple-50 dark:bg-purple-950/30 p-4 rounded-lg border-2 border-purple-300 dark:border-purple-700">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">1</div>
-                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100 flex items-center gap-2">
-                  <Star className="h-4 w-4 fill-purple-600 text-purple-600" />
+                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                   Twoja ocena realności
                 </span>
               </div>
-              <Badge className="bg-purple-600 hover:bg-purple-700 text-white">
-                {stats.myRating}/5
-              </Badge>
-            </div>
-            <div className="flex gap-1">
-              {renderStars(stats.myRating)}
+              {renderVerificationBadge(stats.myRating === 1)}
             </div>
           </div>
         )}
 
         {/* Level 2: Direct Trust Network */}
-        {stats.trustedAverage !== undefined && stats.trustedCount > 0 && (
+        {(stats.trustedRealCount > 0 || stats.trustedNotRealCount > 0) && (
           <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-700">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">2</div>
-                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
                   Osoby przez Ciebie zweryfikowane
                 </span>
               </div>
-              <Badge variant="outline" className="border-blue-600 text-blue-900 dark:text-blue-100">
-                {stats.trustedAverage.toFixed(1)}/5 ({stats.trustedCount})
-              </Badge>
             </div>
-            <div className="flex gap-1">
-              {renderStars(stats.trustedAverage)}
+            <div className="flex gap-2 text-xs">
+              <Badge className="bg-green-600 hover:bg-green-700">
+                ✓ {stats.trustedRealCount} realnych
+              </Badge>
+              {stats.trustedNotRealCount > 0 && (
+                <Badge variant="destructive">
+                  ✗ {stats.trustedNotRealCount} nierealnych
+                </Badge>
+              )}
             </div>
           </div>
         )}
 
         {/* Level 3: Second Degree Network */}
-        {stats.secondDegreeAverage !== undefined && stats.secondDegreeCount > 0 && (
+        {(stats.secondDegreeRealCount > 0 || stats.secondDegreeNotRealCount > 0) && (
           <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">3</div>
-                <span className="text-sm font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
-                  <Network className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-semibold text-green-900 dark:text-green-100">
                   Sieć drugiego stopnia
                 </span>
               </div>
-              <Badge variant="outline" className="border-green-600 text-green-900 dark:text-green-100">
-                {stats.secondDegreeAverage.toFixed(1)}/5 ({stats.secondDegreeCount})
-              </Badge>
             </div>
-            <div className="flex gap-1">
-              {renderStars(stats.secondDegreeAverage)}
+            <div className="flex gap-2 text-xs">
+              <Badge className="bg-green-600 hover:bg-green-700">
+                ✓ {stats.secondDegreeRealCount}
+              </Badge>
+              {stats.secondDegreeNotRealCount > 0 && (
+                <Badge variant="destructive">
+                  ✗ {stats.secondDegreeNotRealCount}
+                </Badge>
+              )}
             </div>
           </div>
         )}
 
         {/* Level 4: Third Degree Network */}
-        {stats.thirdDegreeAverage !== undefined && stats.thirdDegreeCount > 0 && (
+        {(stats.thirdDegreeRealCount > 0 || stats.thirdDegreeNotRealCount > 0) && (
           <div className="bg-orange-50 dark:bg-orange-950/30 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs font-bold">4</div>
-                <span className="text-sm font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
-                  <Network className="h-4 w-4 text-orange-600" />
+                <span className="text-sm font-semibold text-orange-900 dark:text-orange-100">
                   Sieć trzeciego stopnia
                 </span>
               </div>
-              <Badge variant="outline" className="border-orange-600 text-orange-900 dark:text-orange-100">
-                {stats.thirdDegreeAverage.toFixed(1)}/5 ({stats.thirdDegreeCount})
-              </Badge>
             </div>
-            <div className="flex gap-1">
-              {renderStars(stats.thirdDegreeAverage)}
+            <div className="flex gap-2 text-xs">
+              <Badge className="bg-green-600 hover:bg-green-700">
+                ✓ {stats.thirdDegreeRealCount}
+              </Badge>
+              {stats.thirdDegreeNotRealCount > 0 && (
+                <Badge variant="destructive">
+                  ✗ {stats.thirdDegreeNotRealCount}
+                </Badge>
+              )}
             </div>
           </div>
         )}
 
         {/* Level 5: Fourth Degree Network */}
-        {stats.fourthDegreeAverage !== undefined && stats.fourthDegreeCount > 0 && (
+        {(stats.fourthDegreeRealCount > 0 || stats.fourthDegreeNotRealCount > 0) && (
           <div className="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-lg border border-rose-200 dark:border-rose-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-bold">5</div>
-                <span className="text-sm font-semibold text-rose-900 dark:text-rose-100 flex items-center gap-2">
-                  <Network className="h-4 w-4 text-rose-600" />
+                <span className="text-sm font-semibold text-rose-900 dark:text-rose-100">
                   Sieć czwartego stopnia
                 </span>
               </div>
-              <Badge variant="outline" className="border-rose-600 text-rose-900 dark:text-rose-100">
-                {stats.fourthDegreeAverage.toFixed(1)}/5 ({stats.fourthDegreeCount})
-              </Badge>
             </div>
-            <div className="flex gap-1">
-              {renderStars(stats.fourthDegreeAverage)}
+            <div className="flex gap-2 text-xs">
+              <Badge className="bg-green-600 hover:bg-green-700">
+                ✓ {stats.fourthDegreeRealCount}
+              </Badge>
+              {stats.fourthDegreeNotRealCount > 0 && (
+                <Badge variant="destructive">
+                  ✗ {stats.fourthDegreeNotRealCount}
+                </Badge>
+              )}
             </div>
           </div>
         )}
 
-        {/* Level 6: Total Positive Ratings */}
-        {stats.positiveCount > 0 && (
+        {/* Level 6: Total Ratings */}
+        {stats.total > 0 && (
           <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold">6</div>
-                <span className="text-sm font-semibold text-amber-900 dark:text-amber-100 flex items-center gap-2">
-                  <ThumbsUp className="h-4 w-4 text-amber-600" />
-                  Łączna liczba pozytywnych ocen
+                <span className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  Łączne weryfikacje
                 </span>
               </div>
-              <Badge variant="outline" className="border-amber-600 text-amber-900 dark:text-amber-100">
-                {stats.positiveCount} ocen (≥4/5)
-              </Badge>
             </div>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-              Średnia ze wszystkich: {stats.average.toFixed(1)}/5 ({stats.total} ocen)
-            </p>
+            <div className="flex gap-2 text-xs">
+              <Badge className="bg-green-600 hover:bg-green-700">
+                ✓ {stats.realCount} realnych
+              </Badge>
+              {stats.notRealCount > 0 && (
+                <Badge variant="destructive">
+                  ✗ {stats.notRealCount} nierealnych
+                </Badge>
+              )}
+            </div>
           </div>
         )}
 

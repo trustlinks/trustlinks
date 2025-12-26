@@ -29,8 +29,9 @@ Kind 4101 jest używany do publikowania ocen reputacji dla innych użytkowników
 
 - **`p`**: Publiczny klucz użytkownika, któremu nadajemy reputację (HEX)
   - Opcjonalnie może zawierać relay hint
-- **`rating`**: Wartość numeryczna oceny (string)
-  - Wartości od "-1" do "5" (gdzie -1 = bardzo negatywna, 0 = neutralna, 5 = bardzo pozytywna)
+- **`rating`**: Status weryfikacji (string)
+  - `"1"` = Realny (zweryfikowana osoba)
+  - `"0"` = Nierealny (bot, fake account, lub niesprawdzona tożsamość)
 
 #### Opcjonalne tagi
 
@@ -45,32 +46,33 @@ Pole `content` może zawierać opcjonalny komentarz tekstowy wyjaśniający pow�
 
 Klienci implementujące ten NIP powinny wyświetlać reputację w następującej hierarchii (6 poziomów):
 
-1. **Poziom 1 - Moja ocena realności osoby**
-   - Bezpośrednia ocena nadana przez zalogowanego użytkownika
+1. **Poziom 1 - Moja weryfikacja**
+   - Bezpośrednia weryfikacja przez zalogowanego użytkownika
+   - Pokazuje czy użytkownik oznaczył daną osobę jako realną (1) czy nierealną (0)
    - Najwyższy priorytet wyświetlania
 
-2. **Poziom 2 - Oceny od bezpośrednio zweryfikowanych osób**
-   - Reputacje nadane przez osoby, którym JA nadałem status "realnej osoby" (rating >= 4)
-   - Wyświetlać średnią i liczbę ocen
+2. **Poziom 2 - Weryfikacje od bezpośrednio zweryfikowanych osób**
+   - Weryfikacje od osób, którym JA nadałem status "realnej osoby" (rating = 1)
+   - Pokazuje liczbę weryfikacji "realny" vs "nierealny"
 
 3. **Poziom 3 - Sieć drugiego stopnia**
-   - Reputacje nadane przez osoby zweryfikowane przez moją bezpośrednią sieć zaufania
-   - Osoby, którym osoby z poziomu 2 nadały status realności (rating >= 4)
-   - Wyświetlać średnią i liczbę ocen
+   - Weryfikacje od osób zweryfikowanych przez moją bezpośrednią sieć zaufania
+   - Osoby, którym osoby z poziomu 2 nadały status realności (rating = 1)
+   - Pokazuje liczbę weryfikacji "realny" vs "nierealny"
 
 4. **Poziom 4 - Sieć trzeciego stopnia**
-   - Reputacje nadane przez osoby zweryfikowane przez sieć drugiego stopnia
-   - Osoby, którym osoby z poziomu 3 nadały status realności (rating >= 4)
-   - Wyświetlać średnią i liczbę ocen
+   - Weryfikacje od osób zweryfikowanych przez sieć drugiego stopnia
+   - Osoby, którym osoby z poziomu 3 nadały status realności (rating = 1)
+   - Pokazuje liczbę weryfikacji "realny" vs "nierealny"
 
 5. **Poziom 5 - Sieć czwartego stopnia**
-   - Reputacje nadane przez osoby zweryfikowane przez sieć trzeciego stopnia
-   - Osoby, którym osoby z poziomu 4 nadały status realności (rating >= 4)
-   - Wyświetlać średnią i liczbę ocen
+   - Weryfikacje od osób zweryfikowanych przez sieć trzeciego stopnia
+   - Osoby, którym osoby z poziomu 4 nadały status realności (rating = 1)
+   - Pokazuje liczbę weryfikacji "realny" vs "nierealny"
 
-6. **Poziom 6 - Łączna liczba pozytywnych ocen**
-   - Suma wszystkich pozytywnych ocen (rating >= 4) z całej sieci
-   - Wyświetlać jako wskaźnik ogólnej popularności/zaufania
+6. **Poziom 6 - Łączne weryfikacje z całej sieci**
+   - Suma wszystkich weryfikacji z całej sieci Nostr
+   - Pokazuje łączną liczbę weryfikacji "realny" vs "nierealny"
 
 ### Przykład zapytania
 
@@ -105,11 +107,11 @@ Aby pobrać reputacje w określonym kontekście:
   "kind": 4101,
   "tags": [
     ["p", "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d", "wss://relay.damus.io"],
-    ["rating", "5"],
+    ["rating", "1"],
     ["t", "conference"],
     ["context", "Baltic Honeybadger 2025"]
   ],
-  "content": "Świetna prezentacja o Nostr! Bardzo pomocna i inspirująca.",
+  "content": "Spotkałem osobiście na konferencji - zweryfikowana realna osoba.",
   "sig": "..."
 }
 ```

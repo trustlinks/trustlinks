@@ -15,8 +15,8 @@ export function useGiveReputation() {
   const giveReputation = (params: GiveReputationParams) => {
     const { targetPubkey, rating, context, tag, comment } = params;
 
-    if (rating < -1 || rating > 5) {
-      throw new Error('Rating must be between -1 and 5');
+    if (rating !== 0 && rating !== 1) {
+      throw new Error('Rating must be either 0 (not real) or 1 (real)');
     }
 
     const tags: string[][] = [
