@@ -43,7 +43,7 @@ Pole `content` może zawierać opcjonalny komentarz tekstowy wyjaśniający pow�
 
 ### Mechanizm agregacji reputacji - Web of Trust
 
-Klienci implementujące ten NIP powinny wyświetlać reputację w następującej hierarchii:
+Klienci implementujące ten NIP powinny wyświetlać reputację w następującej hierarchii (6 poziomów):
 
 1. **Poziom 1 - Moja ocena realności osoby**
    - Bezpośrednia ocena nadana przez zalogowanego użytkownika
@@ -58,7 +58,17 @@ Klienci implementujące ten NIP powinny wyświetlać reputację w następującej
    - Osoby, którym osoby z poziomu 2 nadały status realności (rating >= 4)
    - Wyświetlać średnią i liczbę ocen
 
-4. **Poziom 4 - Łączna liczba pozytywnych ocen**
+4. **Poziom 4 - Sieć trzeciego stopnia**
+   - Reputacje nadane przez osoby zweryfikowane przez sieć drugiego stopnia
+   - Osoby, którym osoby z poziomu 3 nadały status realności (rating >= 4)
+   - Wyświetlać średnią i liczbę ocen
+
+5. **Poziom 5 - Sieć czwartego stopnia**
+   - Reputacje nadane przez osoby zweryfikowane przez sieć trzeciego stopnia
+   - Osoby, którym osoby z poziomu 4 nadały status realności (rating >= 4)
+   - Wyświetlać średnią i liczbę ocen
+
+6. **Poziom 6 - Łączna liczba pozytywnych ocen**
    - Suma wszystkich pozytywnych ocen (rating >= 4) z całej sieci
    - Wyświetlać jako wskaźnik ogólnej popularności/zaufania
 

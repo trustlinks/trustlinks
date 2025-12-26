@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthor } from "@/hooks/useAuthor";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useReputation, useMyReputation, useTrustedReputation, useSecondDegreeReputation, calculateReputationStats, useReputationGivenBy, useReputationsGivenByMultiple } from "@/hooks/useReputation";
+import { useReputation, useMyReputation, useTrustedReputation, useSecondDegreeReputation, useThirdDegreeReputation, useFourthDegreeReputation, calculateReputationStats, useReputationGivenBy, useReputationsGivenByMultiple } from "@/hooks/useReputation";
 import { genUserName } from "@/lib/genUserName";
 import { GiveReputationDialog } from "./GiveReputationDialog";
 import { Star, Users, TrendingUp, User, Network, ThumbsUp } from "lucide-react";
@@ -55,6 +55,44 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
   const { data: secondDegreeReputations } = useSecondDegreeReputation(pubkey, secondDegreePubkeys);
 
+  // Level 3: Get reputations from second degree network to find third-degree connections
+  const { data: secondDegreeNetworkReputations } = useReputationsGivenByMultiple(secondDegreePubkeys);
+
+  const thirdDegreePubkeys = useMemo(() => {
+    if (!secondDegreeNetworkReputations) return [];
+
+    const allPreviousPubkeys = [...trustedPubkeys, ...secondDegreePubkeys];
+
+    return secondDegreeNetworkReputations
+      .filter(event => {
+        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+        return rating >= 4;
+      })
+      .map(event => event.tags.find(([name]) => name === 'p')?.[1])
+      .filter((pk): pk is string => !!pk && !allPreviousPubkeys.includes(pk) && pk !== user?.pubkey);
+  }, [secondDegreeNetworkReputations, trustedPubkeys, secondDegreePubkeys, user?.pubkey]);
+
+  const { data: thirdDegreeReputations } = useThirdDegreeReputation(pubkey, thirdDegreePubkeys);
+
+  // Level 4: Get reputations from third degree network to find fourth-degree connections
+  const { data: thirdDegreeNetworkReputations } = useReputationsGivenByMultiple(thirdDegreePubkeys);
+
+  const fourthDegreePubkeys = useMemo(() => {
+    if (!thirdDegreeNetworkReputations) return [];
+
+    const allPreviousPubkeys = [...trustedPubkeys, ...secondDegreePubkeys, ...thirdDegreePubkeys];
+
+    return thirdDegreeNetworkReputations
+      .filter(event => {
+        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+        return rating >= 4;
+      })
+      .map(event => event.tags.find(([name]) => name === 'p')?.[1])
+      .filter((pk): pk is string => !!pk && !allPreviousPubkeys.includes(pk) && pk !== user?.pubkey);
+  }, [thirdDegreeNetworkReputations, trustedPubkeys, secondDegreePubkeys, thirdDegreePubkeys, user?.pubkey]);
+
+  const { data: fourthDegreeReputations } = useFourthDegreeReputation(pubkey, fourthDegreePubkeys);
+
   const metadata = author.data?.metadata;
   const displayName = metadata?.name || metadata?.display_name || genUserName(pubkey);
   const profileImage = metadata?.picture;
@@ -64,7 +102,9 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
     allReputations || [],
     myReputation,
     trustedReputations,
-    secondDegreeReputations
+    secondDegreeReputations,
+    thirdDegreeReputations,
+    fourthDegreeReputations
   );
 
   const npub = nip19.npubEncode(pubkey);
@@ -205,12 +245,54 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
           </div>
         )}
 
-        {/* Level 4: Total Positive Ratings */}
+        {/* Level 4: Third Degree Network */}
+        {stats.thirdDegreeAverage !== undefined && stats.thirdDegreeCount > 0 && (
+          <div className="bg-orange-50 dark:bg-orange-950/30 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs font-bold">4</div>
+                <span className="text-sm font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
+                  <Network className="h-4 w-4 text-orange-600" />
+                  Sieć trzeciego stopnia
+                </span>
+              </div>
+              <Badge variant="outline" className="border-orange-600 text-orange-900 dark:text-orange-100">
+                {stats.thirdDegreeAverage.toFixed(1)}/5 ({stats.thirdDegreeCount})
+              </Badge>
+            </div>
+            <div className="flex gap-1">
+              {renderStars(stats.thirdDegreeAverage)}
+            </div>
+          </div>
+        )}
+
+        {/* Level 5: Fourth Degree Network */}
+        {stats.fourthDegreeAverage !== undefined && stats.fourthDegreeCount > 0 && (
+          <div className="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-lg border border-rose-200 dark:border-rose-800">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-bold">5</div>
+                <span className="text-sm font-semibold text-rose-900 dark:text-rose-100 flex items-center gap-2">
+                  <Network className="h-4 w-4 text-rose-600" />
+                  Sieć czwartego stopnia
+                </span>
+              </div>
+              <Badge variant="outline" className="border-rose-600 text-rose-900 dark:text-rose-100">
+                {stats.fourthDegreeAverage.toFixed(1)}/5 ({stats.fourthDegreeCount})
+              </Badge>
+            </div>
+            <div className="flex gap-1">
+              {renderStars(stats.fourthDegreeAverage)}
+            </div>
+          </div>
+        )}
+
+        {/* Level 6: Total Positive Ratings */}
         {stats.positiveCount > 0 && (
           <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold">4</div>
+                <div className="h-6 w-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold">6</div>
                 <span className="text-sm font-semibold text-amber-900 dark:text-amber-100 flex items-center gap-2">
                   <ThumbsUp className="h-4 w-4 text-amber-600" />
                   Łączna liczba pozytywnych ocen

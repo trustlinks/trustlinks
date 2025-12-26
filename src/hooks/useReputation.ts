@@ -125,6 +125,60 @@ export function useSecondDegreeReputation(targetPubkey: string, secondDegreePubk
   });
 }
 
+export function useThirdDegreeReputation(targetPubkey: string, thirdDegreePubkeys: string[]) {
+  const { nostr } = useNostr();
+
+  return useQuery({
+    queryKey: ['third-degree-reputation', targetPubkey, thirdDegreePubkeys],
+    queryFn: async (c) => {
+      if (thirdDegreePubkeys.length === 0) return [];
+
+      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+
+      const events = await nostr.query(
+        [{
+          kinds: [4101],
+          authors: thirdDegreePubkeys,
+          '#p': [targetPubkey],
+          limit: 100
+        }],
+        { signal }
+      );
+
+      return events.filter(validateReputationEvent);
+    },
+    enabled: thirdDegreePubkeys.length > 0,
+    staleTime: 30000,
+  });
+}
+
+export function useFourthDegreeReputation(targetPubkey: string, fourthDegreePubkeys: string[]) {
+  const { nostr } = useNostr();
+
+  return useQuery({
+    queryKey: ['fourth-degree-reputation', targetPubkey, fourthDegreePubkeys],
+    queryFn: async (c) => {
+      if (fourthDegreePubkeys.length === 0) return [];
+
+      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+
+      const events = await nostr.query(
+        [{
+          kinds: [4101],
+          authors: fourthDegreePubkeys,
+          '#p': [targetPubkey],
+          limit: 100
+        }],
+        { signal }
+      );
+
+      return events.filter(validateReputationEvent);
+    },
+    enabled: fourthDegreePubkeys.length > 0,
+    staleTime: 30000,
+  });
+}
+
 export function useReputationGivenBy(authorPubkey: string) {
   const { nostr } = useNostr();
 
@@ -183,6 +237,10 @@ export interface ReputationStats {
   trustedCount: number;
   secondDegreeAverage?: number;
   secondDegreeCount: number;
+  thirdDegreeAverage?: number;
+  thirdDegreeCount: number;
+  fourthDegreeAverage?: number;
+  fourthDegreeCount: number;
   positiveCount: number;
 }
 
@@ -190,7 +248,9 @@ export function calculateReputationStats(
   allReputations: ReputationEvent[],
   myReputation?: ReputationEvent | null,
   trustedReputations?: ReputationEvent[],
-  secondDegreeReputations?: ReputationEvent[]
+  secondDegreeReputations?: ReputationEvent[],
+  thirdDegreeReputations?: ReputationEvent[],
+  fourthDegreeReputations?: ReputationEvent[]
 ): ReputationStats {
   const distribution: Record<number, number> = {
     '-1': 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0
@@ -241,6 +301,30 @@ export function calculateReputationStats(
     secondDegreeAverage = secondDegreeCount > 0 ? secondDegreeSum / secondDegreeCount : undefined;
   }
 
+  let thirdDegreeAverage: number | undefined;
+  let thirdDegreeCount = 0;
+  if (thirdDegreeReputations && thirdDegreeReputations.length > 0) {
+    let thirdDegreeSum = 0;
+    thirdDegreeReputations.forEach(event => {
+      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+      thirdDegreeSum += rating;
+      thirdDegreeCount++;
+    });
+    thirdDegreeAverage = thirdDegreeCount > 0 ? thirdDegreeSum / thirdDegreeCount : undefined;
+  }
+
+  let fourthDegreeAverage: number | undefined;
+  let fourthDegreeCount = 0;
+  if (fourthDegreeReputations && fourthDegreeReputations.length > 0) {
+    let fourthDegreeSum = 0;
+    fourthDegreeReputations.forEach(event => {
+      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+      fourthDegreeSum += rating;
+      fourthDegreeCount++;
+    });
+    fourthDegreeAverage = fourthDegreeCount > 0 ? fourthDegreeSum / fourthDegreeCount : undefined;
+  }
+
   return {
     total,
     average,
@@ -250,6 +334,10 @@ export function calculateReputationStats(
     trustedCount,
     secondDegreeAverage,
     secondDegreeCount,
+    thirdDegreeAverage,
+    thirdDegreeCount,
+    fourthDegreeAverage,
+    fourthDegreeCount,
     positiveCount
   };
 }

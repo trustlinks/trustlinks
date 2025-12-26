@@ -14,7 +14,7 @@ Aplikacja do żywego zarządzania reputacją na protokole Nostr, zaprojektowana 
 
 ### Hierarchia wyświetlania reputacji - Web of Trust
 
-Gdy przeglądasz profil użytkownika, reputacja jest wyświetlana w następującej hierarchii:
+Gdy przeglądasz profil użytkownika, reputacja jest wyświetlana w następującej hierarchii (6 poziomów):
 
 1. **Poziom 1 - Twoja ocena realności**
    - Twoja bezpośrednia ocena tej osoby
@@ -28,7 +28,15 @@ Gdy przeglądasz profil użytkownika, reputacja jest wyświetlana w następując
    - Oceny od osób zweryfikowanych przez Twoją sieć zaufania
    - Rozszerzona sieć Web of Trust
 
-4. **Poziom 4 - Łączna liczba pozytywnych ocen**
+4. **Poziom 4 - Sieć trzeciego stopnia**
+   - Oceny od osób zweryfikowanych przez sieć drugiego stopnia
+   - Dalsze rozszerzenie Web of Trust
+
+5. **Poziom 5 - Sieć czwartego stopnia**
+   - Oceny od osób zweryfikowanych przez sieć trzeciego stopnia
+   - Maksymalne rozszerzenie Web of Trust
+
+6. **Poziom 6 - Łączna liczba pozytywnych ocen**
    - Suma wszystkich pozytywnych weryfikacji (≥4/5) z całej sieci
    - Wskaźnik ogólnego zaufania społeczności
 
