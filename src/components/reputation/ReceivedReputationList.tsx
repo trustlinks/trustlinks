@@ -5,20 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthor } from "@/hooks/useAuthor";
 import { genUserName } from "@/lib/genUserName";
-import { Star, Calendar, Tag, User } from "lucide-react";
+import { Star, Calendar, Tag, User, EyeOff } from "lucide-react";
 import { nip19 } from "nostr-tools";
 
 interface ReceivedReputationListProps {
   userPubkey: string;
 }
 
-function ReputationItem({ authorPubkey, rating, context, tag, content, createdAt }: {
+function ReputationItem({ authorPubkey, rating, context, tag, content, createdAt, isPrivate }: {
   authorPubkey: string;
   rating: number;
   context?: string;
   tag?: string;
   content: string;
   createdAt: number;
+  isPrivate?: boolean;
 }) {
   const author = useAuthor(authorPubkey);
   const metadata = author.data?.metadata;
@@ -67,7 +68,14 @@ function ReputationItem({ authorPubkey, rating, context, tag, content, createdAt
                   {npub.slice(0, 16)}...{npub.slice(-8)}
                 </p>
               </div>
-              {renderVerificationBadge(rating)}
+              {isPrivate ? (
+                <Badge className="bg-gray-700 hover:bg-gray-800 text-white">
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  Prywatna
+                </Badge>
+              ) : (
+                renderVerificationBadge(rating)
+              )}
             </div>
 
             {content && (
@@ -153,9 +161,17 @@ export function ReceivedReputationList({ userPubkey }: ReceivedReputationListPro
       {reputations
         .sort((a, b) => b.created_at - a.created_at)
         .map((event) => {
-          const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
           const context = event.tags.find(([name]) => name === 'context')?.[1];
           const tag = event.tags.find(([name]) => name === 't')?.[1];
+
+          // Handle both public (4101) and private (4102) events
+          let rating = 1; // Default for private
+          const isPrivate = event.kind === 4102;
+
+          if (event.kind === 4101) {
+            const ratingTag = event.tags.find(([name]) => name === 'rating');
+            rating = ratingTag ? parseInt(ratingTag[1] || '0') : 0;
+          }
 
           return (
             <ReputationItem
@@ -166,6 +182,7 @@ export function ReceivedReputationList({ userPubkey }: ReceivedReputationListPro
               tag={tag}
               content={event.content}
               createdAt={event.created_at}
+              isPrivate={isPrivate}
             />
           );
         })}
