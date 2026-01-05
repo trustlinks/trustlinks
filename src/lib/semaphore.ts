@@ -1,6 +1,5 @@
-import { Identity } from '@semaphore-protocol/identity';
-import { Group } from '@semaphore-protocol/group';
-import { generateProof, verifyProof } from '@semaphore-protocol/proof';
+// Lazy import Semaphore to avoid loading WASM when not needed
+// This prevents CSP errors in environments that block WebAssembly
 
 export type SemaphoreProof = {
   merkleTreeDepth: number;
@@ -17,12 +16,22 @@ export const TRUSTLINKS_GROUP_ID = 'trustlinks-verification-network';
 export const VERIFICATION_NULLIFIER = 'trustlinks-verify-v1';
 
 /**
+ * Check if WebAssembly is supported
+ */
+export function isWasmSupported(): boolean {
+  try {
+    return typeof WebAssembly !== 'undefined' && typeof WebAssembly.compile === 'function';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Generate or retrieve Semaphore identity
  */
-export function getSemaphoreIdentity(seed: string): Identity {
+async function getSemaphoreIdentity(seed: string) {
+  const { Identity } = await import('@semaphore-protocol/identity');
   try {
-    // Use seed (pubkey) for deterministic identity generation
-    // This ensures same identity across sessions
     const identity = new Identity(seed);
     return identity;
   } catch (error) {
@@ -33,19 +42,19 @@ export function getSemaphoreIdentity(seed: string): Identity {
 
 /**
  * Create a group from verified pubkeys
- * This is used to build the merkle tree for ZK proofs
  */
-export function createVerificationGroup(verifiedPubkeys: string[]): Group {
+async function createVerificationGroup(verifiedPubkeys: string[]) {
+  const { Group } = await import('@semaphore-protocol/group');
+  const { Identity } = await import('@semaphore-protocol/identity');
+  
   try {
     const group = new Group();
-
-    // Add each verified pubkey's commitment to the group
-    verifiedPubkeys.forEach(pubkey => {
-      // Create deterministic identity from pubkey for commitment
+    
+    for (const pubkey of verifiedPubkeys) {
       const identity = new Identity(pubkey);
       group.addMember(identity.commitment);
-    });
-
+    }
+    
     return group;
   } catch (error) {
     console.error('Failed to create verification group:', error);
@@ -61,23 +70,29 @@ export async function generatePrivateVerificationProof(
   targetPubkey: string,
   verifiedPubkeys: string[]
 ): Promise<SemaphoreProof> {
+  if (!isWasmSupported()) {
+    throw new Error('WebAssembly is not supported or blocked by Content Security Policy');
+  }
+
   try {
+    const { generateProof } = await import('@semaphore-protocol/proof');
+    
     // Get user's Semaphore identity (using pubkey as seed)
-    const identity = getSemaphoreIdentity(userPubkey);
-
+    const identity = await getSemaphoreIdentity(userPubkey);
+    
     // Create group from verified pubkeys
-    const group = createVerificationGroup(verifiedPubkeys);
-
+    const group = await createVerificationGroup(verifiedPubkeys);
+    
     // The signal is what we're proving (target pubkey)
     const signal = targetPubkey;
-
+    
     // Generate proof - this can take 3-5 seconds
     const proof = await generateProof(identity, group, signal, VERIFICATION_NULLIFIER);
-
-    return proof;
+    
+    return proof as SemaphoreProof;
   } catch (error) {
     console.error('Semaphore proof generation error:', error);
-    throw new Error('Failed to generate ZK-proof. This may be due to browser compatibility or missing dependencies.');
+    throw new Error('Failed to generate ZK-proof. This may be due to browser compatibility or CSP restrictions.');
   }
 }
 
@@ -89,14 +104,20 @@ export async function verifyPrivateVerificationProof(
   targetPubkey: string,
   groupRoot: bigint
 ): Promise<boolean> {
-  try {
-    await verifyProof(proof, groupRoot);
+  if (!isWasmSupported()) {
+    return false;
+  }
 
+  try {
+    const { verifyProof } = await import('@semaphore-protocol/proof');
+    
+    await verifyProof(proof, groupRoot);
+    
     // Verify the signal matches the target pubkey
-    if (proof.signal !== targetPubkey) {
+    if (proof.message !== targetPubkey) {
       return false;
     }
-
+    
     return true;
   } catch (error) {
     console.error('Proof verification failed:', error);
@@ -107,15 +128,15 @@ export async function verifyPrivateVerificationProof(
 /**
  * Get group merkle root for a set of pubkeys
  */
-export function getGroupRoot(verifiedPubkeys: string[]): bigint {
-  const group = createVerificationGroup(verifiedPubkeys);
+export async function getGroupRoot(verifiedPubkeys: string[]): Promise<bigint> {
+  const group = await createVerificationGroup(verifiedPubkeys);
   return group.root;
 }
 
 /**
  * Check if user can generate private proofs
- * (requires at least 1 verified connection)
+ * (requires at least 1 verified connection AND WASM support)
  */
 export function canGeneratePrivateProof(verifiedPubkeys: string[]): boolean {
-  return verifiedPubkeys.length > 0;
+  return verifiedPubkeys.length > 0 && isWasmSupported();
 }

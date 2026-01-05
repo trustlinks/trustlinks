@@ -48,7 +48,7 @@ export function useGiveReputation() {
           );
 
           // Get merkle root for verification
-          const merkleRoot = getGroupRoot(verifiedPubkeys);
+          const merkleRoot = await getGroupRoot(verifiedPubkeys);
 
           const tags: string[][] = [
             ['p', targetPubkey],
