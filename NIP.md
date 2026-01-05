@@ -250,6 +250,8 @@ const isValid = await verifyProof(proof, merkleRoot);
 - **Wolniejsze** - Generowanie ZK-proof trwa 2-5 sekund
 - **Większe wydarzenia** - ~1KB na proof (vs ~200 bajtów publiczny)
 - **Wymaga sieci** - Musisz mieć co najmniej 1 zweryfikowaną osobę
+- **Wymaga WebAssembly** - Może być zablokowane przez Content Security Policy w niektórych środowiskach
+- **Po wdrożeniu działa** - CSP problem występuje tylko w restrykcyjnych dev environments
 
 ## Względy bezpieczeństwa
 

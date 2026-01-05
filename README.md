@@ -84,7 +84,8 @@ Weryfikacja jest binarna - prosta i czytelna:
 **Uwaga o prywatności:**
 - Aby utworzyć prywatną weryfikację, musisz mieć co najmniej 1 zweryfikowaną osobę w swojej sieci (potrzebna do utworzenia grupy ZK-proof)
 - Generowanie ZK-proof trwa 3-5 sekund
-- Jeśli przeglądarka nie wspiera ZK-proof (problemy z WASM), użyj trybu publicznego
+- **Wymaga WebAssembly**: Prywatne weryfikacje mogą być zablokowane przez Content Security Policy w niektórych środowiskach (np. Shakespeare development). Po wdrożeniu na własnym hostingu (bez restrykcyjnego CSP) będą działać poprawnie.
+- Jeśli przeglądarka nie wspiera ZK-proof, opcja prywatna będzie automatycznie wyłączona - użyj trybu publicznego
 
 ### Przeglądanie reputacji
 
