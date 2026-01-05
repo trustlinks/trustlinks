@@ -53,7 +53,9 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
       .filter((pk): pk is string => !!pk);
   }, [myGivenReputations]);
 
-  const canUsePrivate = verifiedPubkeys.length > 0;
+  // Check if browser supports WASM (required for ZK-proofs)
+  const wasmSupported = typeof WebAssembly !== 'undefined';
+  const canUsePrivate = verifiedPubkeys.length > 0 && wasmSupported;
 
   const handleSubmit = async () => {
     try {
@@ -210,7 +212,12 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
                     "Twoja weryfikacja będzie widoczna publicznie"
                   )}
                 </p>
-                {!canUsePrivate && (
+                {!wasmSupported && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    Prywatne weryfikacje wymagają WebAssembly (zablokowane przez CSP lub przeglądarkę)
+                  </p>
+                )}
+                {wasmSupported && verifiedPubkeys.length === 0 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
                     Potrzebujesz co najmniej 1 zweryfikowanej osoby aby utworzyć prywatną weryfikację
                   </p>
