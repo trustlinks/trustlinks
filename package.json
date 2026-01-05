@@ -51,6 +51,7 @@
     "@zk-kit/baby-jubjub": "^1.0.3",
     "@zk-kit/eddsa-poseidon": "^1.1.0",
     "@zk-kit/lean-imt": "^2.2.4",
+    "@zk-kit/utils": "^1.4.1",
     "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
