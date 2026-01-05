@@ -5,9 +5,9 @@ Aplikacja do żywego zarządzania reputacją na protokole Nostr, zaprojektowana 
 ## ✨ Funkcje
 
 - **Nadawanie reputacji na żywo** - Weryfikuj użytkowników w czasie rzeczywistym podczas wydarzeń
-- **Prywatne weryfikacje** - Zero-Knowledge Proofs (ZK-SNARK) dla anonimowości
+- **Prywatność domyślnie** - Zero-Knowledge Proofs (ZK-SNARK) jako domyślny tryb
 - **6-poziomowy Web of Trust** - Głęboka sieć zaufania do 4 stopni separacji
-- **Przeciwdziałanie inwigilacji** - Opcjonalna prywatność weryfikacji
+- **Przeciwdziałanie inwigilacji** - Prywatność domyślnie, publiczność opcjonalnie
 - **Kompatybilność z Amethyst** - Pełna współpraca z Amethyst i innymi klientami Nostr
 - **Context-aware** - Możliwość tagowania reputacji według wydarzeń i kategorii
 
@@ -73,8 +73,8 @@ Weryfikacja jest binarna - prosta i czytelna:
    - **✓ Realny** - Zweryfikowana osoba (spotkana osobiście, potwierdzona tożsamość)
    - **✗ Nierealny** - Bot, fake account, lub niesprawdzona tożsamość
 3. **Wybierz tryb weryfikacji**:
-   - **Publiczna** (domyślna) - Szybka, widoczna dla wszystkich
-   - **Prywatna** (ZK-proof) - Anonimowa, chroni przed inwigilacją (wymaga ~3-5s)
+   - **Prywatna** (domyślna, zalecana) - Anonimowa, chroni przed inwigilacją (ZK-proof, ~3-5s)
+   - **Publiczna** (opcjonalna) - Szybka, ale widoczna dla wszystkich
 4. Opcjonalnie dodaj:
    - **Kategorię** (np. "conference", "meetup")
    - **Wydarzenie** (np. "Baltic Honeybadger 2025")
