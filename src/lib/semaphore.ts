@@ -25,14 +25,14 @@ export function getSemaphoreIdentity(nostrPrivkey: string): Identity {
  */
 export function createVerificationGroup(verifiedPubkeys: string[]): Group {
   const group = new Group();
-  
+
   // Add each verified pubkey's commitment to the group
   verifiedPubkeys.forEach(pubkey => {
     // Create deterministic identity from pubkey for commitment
     const identity = new Identity(pubkey);
     group.addMember(identity.commitment);
   });
-  
+
   return group;
 }
 
@@ -40,23 +40,28 @@ export function createVerificationGroup(verifiedPubkeys: string[]): Group {
  * Generate a private verification proof
  */
 export async function generatePrivateVerificationProof(
-  userPrivkey: string,
+  userPubkey: string,
   targetPubkey: string,
   verifiedPubkeys: string[]
 ): Promise<SemaphoreProof> {
-  // Get user's Semaphore identity
-  const identity = getSemaphoreIdentity(userPrivkey);
-  
-  // Create group from verified pubkeys
-  const group = createVerificationGroup(verifiedPubkeys);
-  
-  // The signal is what we're proving (target pubkey)
-  const signal = targetPubkey;
-  
-  // Generate proof
-  const proof = await generateProof(identity, group, signal, VERIFICATION_NULLIFIER);
-  
-  return proof;
+  try {
+    // Get user's Semaphore identity (using pubkey as seed)
+    const identity = getSemaphoreIdentity(userPubkey);
+
+    // Create group from verified pubkeys
+    const group = createVerificationGroup(verifiedPubkeys);
+
+    // The signal is what we're proving (target pubkey)
+    const signal = targetPubkey;
+
+    // Generate proof - this can take 3-5 seconds
+    const proof = await generateProof(identity, group, signal, VERIFICATION_NULLIFIER);
+
+    return proof;
+  } catch (error) {
+    console.error('Semaphore proof generation error:', error);
+    throw new Error('Failed to generate ZK-proof. This may be due to browser compatibility or missing dependencies.');
+  }
 }
 
 /**
@@ -69,12 +74,12 @@ export async function verifyPrivateVerificationProof(
 ): Promise<boolean> {
   try {
     await verifyProof(proof, groupRoot);
-    
+
     // Verify the signal matches the target pubkey
     if (proof.signal !== targetPubkey) {
       return false;
     }
-    
+
     return true;
   } catch (error) {
     console.error('Proof verification failed:', error);
