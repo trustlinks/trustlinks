@@ -15,11 +15,11 @@ export interface GiveReputationParams {
 }
 
 export function useGiveReputation() {
-  const { mutate: createEvent, isPending: isPublishing, ...rest } = useNostrPublish();
+  const { mutateAsync: createEvent, isPending: isPublishing, ...rest } = useNostrPublish();
   const { user } = useCurrentUser();
   const [isGeneratingProof, setIsGeneratingProof] = useState(false);
 
-  const giveReputation = async (params: GiveReputationParams) => {
+  const giveReputation = async (params: GiveReputationParams): Promise<void> => {
     const { targetPubkey, rating, context, tag, comment, isPrivate, verifiedPubkeys } = params;
 
     if (rating !== 0 && rating !== 1) {
@@ -74,7 +74,7 @@ export function useGiveReputation() {
           created_at: Math.floor(Date.now() / 1000),
         };
 
-        createEvent(event);
+        await createEvent(event);
       } catch (error) {
         console.error('Failed to generate private verification:', error);
         throw new Error('Failed to generate private verification proof');
@@ -103,7 +103,7 @@ export function useGiveReputation() {
         created_at: Math.floor(Date.now() / 1000),
       };
 
-      createEvent(event);
+      await createEvent(event);
     }
   };
 
