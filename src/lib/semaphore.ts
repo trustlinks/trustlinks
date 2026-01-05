@@ -1,7 +1,14 @@
 import { Identity } from '@semaphore-protocol/identity';
 import { Group } from '@semaphore-protocol/group';
 import { generateProof, verifyProof } from '@semaphore-protocol/proof';
-import type { SemaphoreProof } from '@semaphore-protocol/proof';
+
+export type SemaphoreProof = {
+  merkleTreeDepth: number;
+  merkleTreeRoot: string;
+  nullifier: string;
+  message: string;
+  points: string[];
+};
 
 // Group ID for TrustLinks network
 export const TRUSTLINKS_GROUP_ID = 'trustlinks-verification-network';
@@ -10,13 +17,18 @@ export const TRUSTLINKS_GROUP_ID = 'trustlinks-verification-network';
 export const VERIFICATION_NULLIFIER = 'trustlinks-verify-v1';
 
 /**
- * Generate or retrieve Semaphore identity from localStorage
+ * Generate or retrieve Semaphore identity
  */
-export function getSemaphoreIdentity(nostrPrivkey: string): Identity {
-  // Use Nostr privkey as seed for deterministic identity generation
-  // This ensures same identity across sessions
-  const identity = new Identity(nostrPrivkey);
-  return identity;
+export function getSemaphoreIdentity(seed: string): Identity {
+  try {
+    // Use seed (pubkey) for deterministic identity generation
+    // This ensures same identity across sessions
+    const identity = new Identity(seed);
+    return identity;
+  } catch (error) {
+    console.error('Failed to create Semaphore identity:', error);
+    throw new Error('Failed to initialize cryptographic identity');
+  }
 }
 
 /**
@@ -24,16 +36,21 @@ export function getSemaphoreIdentity(nostrPrivkey: string): Identity {
  * This is used to build the merkle tree for ZK proofs
  */
 export function createVerificationGroup(verifiedPubkeys: string[]): Group {
-  const group = new Group();
+  try {
+    const group = new Group();
 
-  // Add each verified pubkey's commitment to the group
-  verifiedPubkeys.forEach(pubkey => {
-    // Create deterministic identity from pubkey for commitment
-    const identity = new Identity(pubkey);
-    group.addMember(identity.commitment);
-  });
+    // Add each verified pubkey's commitment to the group
+    verifiedPubkeys.forEach(pubkey => {
+      // Create deterministic identity from pubkey for commitment
+      const identity = new Identity(pubkey);
+      group.addMember(identity.commitment);
+    });
 
-  return group;
+    return group;
+  } catch (error) {
+    console.error('Failed to create verification group:', error);
+    throw new Error('Failed to create cryptographic group');
+  }
 }
 
 /**
