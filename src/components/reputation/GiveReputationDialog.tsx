@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,7 +32,6 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
   const [context, setContext] = useState("");
   const [tag, setTag] = useState("conference");
   const [comment, setComment] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
 
   const { user } = useCurrentUser();
   const { mutateAsync: giveReputation, isPending } = useGiveReputation();
@@ -56,6 +55,16 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
   // Check if browser supports WASM (required for ZK-proofs)
   const wasmSupported = typeof WebAssembly !== 'undefined';
   const canUsePrivate = verifiedPubkeys.length > 0 && wasmSupported;
+
+  // Privacy by default - but fallback to public if not available
+  const [isPrivate, setIsPrivate] = useState(true);
+
+  // Auto-switch to public if private is not available
+  useEffect(() => {
+    if (!canUsePrivate && isPrivate) {
+      setIsPrivate(false);
+    }
+  }, [canUsePrivate, isPrivate]);
 
   const handleSubmit = async () => {
     try {
@@ -191,12 +200,12 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
                   <Label htmlFor="private-mode" className="text-base font-semibold">
                     {isPrivate ? (
                       <span className="flex items-center gap-2">
-                        <EyeOff className="h-4 w-4" />
-                        Weryfikacja prywatna
+                        <Shield className="h-4 w-4 text-green-600" />
+                        Weryfikacja prywatna (domyślna)
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 text-amber-600" />
                         Weryfikacja publiczna
                       </span>
                     )}
@@ -206,22 +215,45 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
                   {isPrivate ? (
                     <>
                       <Shield className="inline h-3 w-3 mr-1" />
-                      Używa ZK-proof - nikt nie będzie wiedział kto weryfikował
+                      Używa ZK-proof - nikt nie będzie wiedział kto weryfikował (zalecane)
                     </>
                   ) : (
-                    "Twoja weryfikacja będzie widoczna publicznie"
+                    <>
+                      ⚠️ Twoja weryfikacja będzie widoczna publicznie dla wszystkich
+                    </>
                   )}
                 </p>
                 {!wasmSupported ? (
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    ⚠️ Prywatne weryfikacje niedostępne: WebAssembly zablokowane przez Content Security Policy.
-                    Użyj trybu publicznego lub otwórz aplikację w innym środowisku.
-                  </p>
+                  <div className="bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                    <p className="text-xs text-red-700 dark:text-red-300 font-medium mb-1">
+                      ⚠️ Tryb prywatny niedostępny
+                    </p>
+                    <p className="text-xs text-red-600 dark:text-red-400">
+                      WebAssembly zablokowane przez Content Security Policy.
+                      Aplikacja automatycznie używa trybu publicznego. Po wdrożeniu na własnym hostingu tryb prywatny będzie dostępny.
+                    </p>
+                  </div>
                 ) : verifiedPubkeys.length === 0 ? (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Potrzebujesz co najmniej 1 zweryfikowanej osoby aby utworzyć prywatną weryfikację
-                  </p>
-                ) : null}
+                  <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mb-1">
+                      ℹ️ Tryb prywatny będzie dostępny po pierwszej weryfikacji
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Potrzebujesz co najmniej 1 zweryfikowanej osoby w sieci aby utworzyć prywatną weryfikację z ZK-proof.
+                      Ta weryfikacja będzie publiczna, kolejne możesz zrobić prywatnie.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-xs text-green-700 dark:text-green-300 font-medium mb-1">
+                      ✓ Tryb prywatny dostępny
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      Możesz wyłączyć prywatność jeśli chcesz aby weryfikacja była publiczna.
+                      Prywatność chroni przed mapowaniem sieci społecznych.
+                    </p>
+                  </div>
+                )}
               </div>
               <Switch
                 id="private-mode"
