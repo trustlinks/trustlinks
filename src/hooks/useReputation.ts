@@ -3,19 +3,37 @@ import { useQuery } from '@tanstack/react-query';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 export interface ReputationEvent extends NostrEvent {
-  kind: 4101;
+  kind: 4101 | 4102; // 4101 = public, 4102 = private
+}
+
+export interface PrivateReputationData {
+  proof: string;
+  merkleRoot: string;
+  nullifierHash: string;
+  isPrivate: true;
 }
 
 function validateReputationEvent(event: NostrEvent): event is ReputationEvent {
-  if (event.kind !== 4101) return false;
+  // Support both public (4101) and private (4102) verifications
+  if (event.kind !== 4101 && event.kind !== 4102) return false;
 
   const pTag = event.tags.find(([name]) => name === 'p')?.[1];
   const rating = event.tags.find(([name]) => name === 'rating')?.[1];
 
-  if (!pTag || !rating) return false;
+  if (!pTag) return false;
 
-  // Rating must be either "1" (real) or "0" (not real)
-  if (rating !== '0' && rating !== '1') return false;
+  // For public verifications (4101), rating is required
+  if (event.kind === 4101) {
+    if (!rating) return false;
+    // Rating must be either "1" (real) or "0" (not real)
+    if (rating !== '0' && rating !== '1') return false;
+  }
+
+  // For private verifications (4102), proof is required
+  if (event.kind === 4102) {
+    const proofTag = event.tags.find(([name]) => name === 'proof')?.[1];
+    if (!proofTag) return false;
+  }
 
   return true;
 }
@@ -28,9 +46,10 @@ export function useReputation(pubkey: string) {
     queryFn: async (c) => {
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
+      // Query both public (4101) and private (4102) verifications
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           '#p': [pubkey],
           limit: 200
         }],
@@ -53,18 +72,20 @@ export function useMyReputation(targetPubkey: string, myPubkey?: string) {
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(2000)]);
 
+      // Query both public and private verifications
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           authors: [myPubkey],
           '#p': [targetPubkey],
-          limit: 1
+          limit: 2 // May have both public and private
         }],
         { signal }
       );
 
       const validEvents = events.filter(validateReputationEvent);
-      return validEvents[0] || null;
+      // Prefer public over private for display
+      return validEvents.find(e => e.kind === 4101) || validEvents[0] || null;
     },
     enabled: !!myPubkey,
     staleTime: 30000,
@@ -83,7 +104,7 @@ export function useTrustedReputation(targetPubkey: string, trustedPubkeys: strin
 
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           authors: trustedPubkeys,
           '#p': [targetPubkey],
           limit: 100
@@ -110,7 +131,7 @@ export function useSecondDegreeReputation(targetPubkey: string, secondDegreePubk
 
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           authors: secondDegreePubkeys,
           '#p': [targetPubkey],
           limit: 100
@@ -137,7 +158,7 @@ export function useThirdDegreeReputation(targetPubkey: string, thirdDegreePubkey
 
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           authors: thirdDegreePubkeys,
           '#p': [targetPubkey],
           limit: 100
@@ -164,7 +185,7 @@ export function useFourthDegreeReputation(targetPubkey: string, fourthDegreePubk
 
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           authors: fourthDegreePubkeys,
           '#p': [targetPubkey],
           limit: 100
@@ -189,7 +210,7 @@ export function useReputationGivenBy(authorPubkey: string) {
 
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           authors: [authorPubkey],
           limit: 100
         }],
@@ -214,7 +235,7 @@ export function useReputationsGivenByMultiple(authorPubkeys: string[]) {
 
       const events = await nostr.query(
         [{
-          kinds: [4101],
+          kinds: [4101, 4102],
           authors: authorPubkeys,
           limit: 500
         }],
@@ -232,15 +253,21 @@ export interface ReputationStats {
   total: number;
   realCount: number;
   notRealCount: number;
+  privateCount: number;
   myRating?: number;
+  myIsPrivate?: boolean;
   trustedRealCount: number;
   trustedNotRealCount: number;
+  trustedPrivateCount: number;
   secondDegreeRealCount: number;
   secondDegreeNotRealCount: number;
+  secondDegreePrivateCount: number;
   thirdDegreeRealCount: number;
   thirdDegreeNotRealCount: number;
+  thirdDegreePrivateCount: number;
   fourthDegreeRealCount: number;
   fourthDegreeNotRealCount: number;
+  fourthDegreePrivateCount: number;
 }
 
 export function calculateReputationStats(
@@ -254,70 +281,102 @@ export function calculateReputationStats(
   let total = 0;
   let realCount = 0;
   let notRealCount = 0;
+  let privateCount = 0;
 
   allReputations.forEach(event => {
-    const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
     total++;
-    if (rating === 1) {
-      realCount++;
+
+    if (event.kind === 4102) {
+      // Private verification - we can't know if it's real or not
+      privateCount++;
     } else {
-      notRealCount++;
+      // Public verification
+      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+      if (rating === 1) {
+        realCount++;
+      } else {
+        notRealCount++;
+      }
     }
   });
 
   let myRating: number | undefined;
+  let myIsPrivate: boolean | undefined;
   if (myReputation) {
-    myRating = parseInt(myReputation.tags.find(([name]) => name === 'rating')?.[1] || '0');
+    myIsPrivate = myReputation.kind === 4102;
+    if (!myIsPrivate) {
+      myRating = parseInt(myReputation.tags.find(([name]) => name === 'rating')?.[1] || '0');
+    }
   }
 
   let trustedRealCount = 0;
   let trustedNotRealCount = 0;
+  let trustedPrivateCount = 0;
   if (trustedReputations && trustedReputations.length > 0) {
     trustedReputations.forEach(event => {
-      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      if (rating === 1) {
-        trustedRealCount++;
+      if (event.kind === 4102) {
+        trustedPrivateCount++;
       } else {
-        trustedNotRealCount++;
+        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+        if (rating === 1) {
+          trustedRealCount++;
+        } else {
+          trustedNotRealCount++;
+        }
       }
     });
   }
 
   let secondDegreeRealCount = 0;
   let secondDegreeNotRealCount = 0;
+  let secondDegreePrivateCount = 0;
   if (secondDegreeReputations && secondDegreeReputations.length > 0) {
     secondDegreeReputations.forEach(event => {
-      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      if (rating === 1) {
-        secondDegreeRealCount++;
+      if (event.kind === 4102) {
+        secondDegreePrivateCount++;
       } else {
-        secondDegreeNotRealCount++;
+        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+        if (rating === 1) {
+          secondDegreeRealCount++;
+        } else {
+          secondDegreeNotRealCount++;
+        }
       }
     });
   }
 
   let thirdDegreeRealCount = 0;
   let thirdDegreeNotRealCount = 0;
+  let thirdDegreePrivateCount = 0;
   if (thirdDegreeReputations && thirdDegreeReputations.length > 0) {
     thirdDegreeReputations.forEach(event => {
-      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      if (rating === 1) {
-        thirdDegreeRealCount++;
+      if (event.kind === 4102) {
+        thirdDegreePrivateCount++;
       } else {
-        thirdDegreeNotRealCount++;
+        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+        if (rating === 1) {
+          thirdDegreeRealCount++;
+        } else {
+          thirdDegreeNotRealCount++;
+        }
       }
     });
   }
 
   let fourthDegreeRealCount = 0;
   let fourthDegreeNotRealCount = 0;
+  let fourthDegreePrivateCount = 0;
   if (fourthDegreeReputations && fourthDegreeReputations.length > 0) {
     fourthDegreeReputations.forEach(event => {
-      const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-      if (rating === 1) {
-        fourthDegreeRealCount++;
+      if (event.kind === 4102) {
+        fourthDegreePrivateCount++;
       } else {
-        fourthDegreeNotRealCount++;
+        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+        if (rating === 1) {
+          fourthDegreeRealCount++;
+        } else {
+          fourthDegreeNotRealCount++;
+        }
       }
     });
   }
@@ -326,14 +385,20 @@ export function calculateReputationStats(
     total,
     realCount,
     notRealCount,
+    privateCount,
     myRating,
+    myIsPrivate,
     trustedRealCount,
     trustedNotRealCount,
+    trustedPrivateCount,
     secondDegreeRealCount,
     secondDegreeNotRealCount,
+    secondDegreePrivateCount,
     thirdDegreeRealCount,
     thirdDegreeNotRealCount,
+    thirdDegreePrivateCount,
     fourthDegreeRealCount,
     fourthDegreeNotRealCount,
+    fourthDegreePrivateCount,
   };
 }

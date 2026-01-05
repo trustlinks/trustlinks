@@ -12,10 +12,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Star } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Star, Shield, Eye, EyeOff } from "lucide-react";
 import { useGiveReputation } from "@/hooks/useGiveReputation";
 import { useToast } from "@/hooks/useToast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useReputationGivenBy } from "@/hooks/useReputation";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useMemo } from "react";
 
 interface GiveReputationDialogProps {
   targetPubkey: string;
@@ -28,24 +32,46 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
   const [context, setContext] = useState("");
   const [tag, setTag] = useState("conference");
   const [comment, setComment] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
 
-  const { giveReputation, isPending } = useGiveReputation();
+  const { user } = useCurrentUser();
+  const { giveReputation, isPending, isGeneratingProof } = useGiveReputation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const handleSubmit = () => {
+  // Get user's verified connections for private proof
+  const { data: myGivenReputations } = useReputationGivenBy(user?.pubkey || '');
+
+  const verifiedPubkeys = useMemo(() => {
+    return (myGivenReputations || [])
+      .filter(event => {
+        if (event.kind === 4102) return true; // Include private verifications
+        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
+        return rating === 1; // Only "real" ratings
+      })
+      .map(event => event.tags.find(([name]) => name === 'p')?.[1])
+      .filter((pk): pk is string => !!pk);
+  }, [myGivenReputations]);
+
+  const canUsePrivate = verifiedPubkeys.length > 0;
+
+  const handleSubmit = async () => {
     try {
-      giveReputation({
+      await giveReputation({
         targetPubkey,
         rating,
         context: context.trim() || undefined,
         tag: tag.trim() || undefined,
         comment: comment.trim() || undefined,
+        isPrivate,
+        verifiedPubkeys: isPrivate ? verifiedPubkeys : undefined,
       });
 
       toast({
-        title: "Reputacja nadana!",
-        description: rating === 1 ? "Osoba oznaczona jako realna" : "Osoba oznaczona jako nierealna",
+        title: "Weryfikacja nadana!",
+        description: isPrivate
+          ? "Prywatna weryfikacja utworzona (ZK-proof)"
+          : (rating === 1 ? "Osoba oznaczona jako realna" : "Osoba oznaczona jako nierealna"),
       });
 
       queryClient.invalidateQueries({ queryKey: ['reputation', targetPubkey] });
@@ -57,7 +83,7 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
     } catch (error) {
       toast({
         title: "Błąd",
-        description: "Nie udało się nadać reputacji",
+        description: error instanceof Error ? error.message : "Nie udało się nadać weryfikacji",
         variant: "destructive",
       });
       console.error(error);
@@ -148,11 +174,55 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
             <Label htmlFor="comment">Komentarz (opcjonalny)</Label>
             <Textarea
               id="comment"
-              placeholder="Dlaczego nadajesz tę ocenę?"
+              placeholder="Dlaczego nadajesz tę weryfikację?"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
             />
+          </div>
+
+          {/* Privacy Toggle */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="private-mode" className="text-base font-semibold">
+                    {isPrivate ? (
+                      <span className="flex items-center gap-2">
+                        <EyeOff className="h-4 w-4" />
+                        Weryfikacja prywatna
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Weryfikacja publiczna
+                      </span>
+                    )}
+                  </Label>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {isPrivate ? (
+                    <>
+                      <Shield className="inline h-3 w-3 mr-1" />
+                      Używa ZK-proof - nikt nie będzie wiedział kto weryfikował
+                    </>
+                  ) : (
+                    "Twoja weryfikacja będzie widoczna publicznie"
+                  )}
+                </p>
+                {!canUsePrivate && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Potrzebujesz co najmniej 1 zweryfikowanej osoby aby utworzyć prywatną weryfikację
+                  </p>
+                )}
+              </div>
+              <Switch
+                id="private-mode"
+                checked={isPrivate}
+                onCheckedChange={setIsPrivate}
+                disabled={!canUsePrivate}
+              />
+            </div>
           </div>
         </div>
 
@@ -165,7 +235,16 @@ export function GiveReputationDialog({ targetPubkey, currentRating }: GiveReputa
             disabled={isPending}
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           >
-            {isPending ? 'Wysyłanie...' : 'Zweryfikuj użytkownika'}
+            {isGeneratingProof ? (
+              <>
+                <Shield className="h-4 w-4 mr-2 animate-spin" />
+                Generowanie ZK-proof...
+              </>
+            ) : isPending ? (
+              'Wysyłanie...'
+            ) : (
+              'Zweryfikuj użytkownika'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

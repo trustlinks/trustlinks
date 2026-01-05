@@ -4,9 +4,10 @@ Aplikacja do żywego zarządzania reputacją na protokole Nostr, zaprojektowana 
 
 ## ✨ Funkcje
 
-- **Nadawanie reputacji na żywo** - Oceń użytkowników w czasie rzeczywistym podczas wydarzeń
-- **Sieć zaufania** - Priorytetowe wyświetlanie reputacji nadanej przez osoby, którym ufasz
-- **Inteligentna agregacja** - Automatyczne obliczanie średniej reputacji z priorytetem dla twojej sieci
+- **Nadawanie reputacji na żywo** - Weryfikuj użytkowników w czasie rzeczywistym podczas wydarzeń
+- **Prywatne weryfikacje** - Zero-Knowledge Proofs (ZK-SNARK) dla anonimowości
+- **6-poziomowy Web of Trust** - Głęboka sieć zaufania do 4 stopni separacji
+- **Przeciwdziałanie inwigilacji** - Opcjonalna prywatność weryfikacji
 - **Kompatybilność z Amethyst** - Pełna współpraca z Amethyst i innymi klientami Nostr
 - **Context-aware** - Możliwość tagowania reputacji według wydarzeń i kategorii
 
@@ -71,11 +72,16 @@ Weryfikacja jest binarna - prosta i czytelna:
 2. Wybierz status:
    - **✓ Realny** - Zweryfikowana osoba (spotkana osobiście, potwierdzona tożsamość)
    - **✗ Nierealny** - Bot, fake account, lub niesprawdzona tożsamość
-3. Opcjonalnie dodaj:
+3. **Wybierz tryb weryfikacji**:
+   - **Publiczna** (domyślna) - Szybka, widoczna dla wszystkich
+   - **Prywatna** (ZK-proof) - Anonimowa, chroni przed inwigilacją (wymaga ~3-5s)
+4. Opcjonalnie dodaj:
    - **Kategorię** (np. "conference", "meetup")
    - **Wydarzenie** (np. "Baltic Honeybadger 2025")
    - **Komentarz** wyjaśniający weryfikację
-4. Kliknij "Zweryfikuj użytkownika"
+5. Kliknij "Zweryfikuj użytkownika"
+
+**Uwaga o prywatności:** Aby utworzyć prywatną weryfikację, musisz mieć co najmniej 1 zweryfikowaną osobę w swojej sieci (potrzebna do utworzenia grupy ZK-proof).
 
 ### Przeglądanie reputacji
 
@@ -94,7 +100,9 @@ Weryfikacja jest binarna - prosta i czytelna:
 
 ### Protokół Nostr
 
-Aplikacja wykorzystuje **Kind 4101** dla wydarzeń reputacji z następującymi tagami:
+Aplikacja wykorzystuje dwa typy wydarzeń:
+
+**Kind 4101** - Publiczne weryfikacje:
 
 ```json
 {
@@ -105,6 +113,21 @@ Aplikacja wykorzystuje **Kind 4101** dla wydarzeń reputacji z następującymi t
     ["rating", "1"],
     ["t", "conference"],
     ["context", "Baltic Honeybadger 2025"]
+  ]
+}
+```
+
+**Kind 4102** - Prywatne weryfikacje (ZK-proof):
+
+```json
+{
+  "kind": 4102,
+  "content": "",
+  "tags": [
+    ["p", "<pubkey-otrzymującego>"],
+    ["proof", "<semaphore-zk-proof>"],
+    ["merkle_root", "<group-root>"],
+    ["t", "conference"]
   ]
 }
 ```

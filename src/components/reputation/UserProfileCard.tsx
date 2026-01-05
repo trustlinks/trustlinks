@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useReputation, useMyReputation, useTrustedReputation, useSecondDegreeReputation, useThirdDegreeReputation, useFourthDegreeReputation, calculateReputationStats, useReputationGivenBy, useReputationsGivenByMultiple } from "@/hooks/useReputation";
 import { genUserName } from "@/lib/genUserName";
 import { GiveReputationDialog } from "./GiveReputationDialog";
-import { Star, Users, TrendingUp, User, Network, ThumbsUp } from "lucide-react";
+import { Star, Users, TrendingUp, User, Network, ThumbsUp, EyeOff } from "lucide-react";
 import { nip19 } from "nostr-tools";
 import { useMemo } from "react";
 
@@ -176,7 +176,7 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
       <CardContent className="space-y-3">
         {/* Level 1: My Rating */}
-        {stats.myRating !== undefined && (
+        {(stats.myRating !== undefined || stats.myIsPrivate) && (
           <div className="bg-purple-50 dark:bg-purple-950/30 p-4 rounded-lg border-2 border-purple-300 dark:border-purple-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -185,13 +185,20 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
                   Twoja ocena realności
                 </span>
               </div>
-              {renderVerificationBadge(stats.myRating === 1)}
+              {stats.myIsPrivate ? (
+                <Badge className="bg-gray-700 hover:bg-gray-800 text-white">
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  Prywatna
+                </Badge>
+              ) : stats.myRating !== undefined ? (
+                renderVerificationBadge(stats.myRating === 1)
+              ) : null}
             </div>
           </div>
         )}
 
         {/* Level 2: Direct Trust Network */}
-        {(stats.trustedRealCount > 0 || stats.trustedNotRealCount > 0) && (
+        {(stats.trustedRealCount > 0 || stats.trustedNotRealCount > 0 || stats.trustedPrivateCount > 0) && (
           <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-700">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -201,13 +208,21 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 text-xs">
-              <Badge className="bg-green-600 hover:bg-green-700">
-                ✓ {stats.trustedRealCount} realnych
-              </Badge>
+            <div className="flex gap-2 text-xs flex-wrap">
+              {stats.trustedRealCount > 0 && (
+                <Badge className="bg-green-600 hover:bg-green-700">
+                  ✓ {stats.trustedRealCount}
+                </Badge>
+              )}
               {stats.trustedNotRealCount > 0 && (
                 <Badge variant="destructive">
-                  ✗ {stats.trustedNotRealCount} nierealnych
+                  ✗ {stats.trustedNotRealCount}
+                </Badge>
+              )}
+              {stats.trustedPrivateCount > 0 && (
+                <Badge className="bg-gray-700 hover:bg-gray-800">
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  {stats.trustedPrivateCount} prywatnych
                 </Badge>
               )}
             </div>
@@ -215,7 +230,7 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
         )}
 
         {/* Level 3: Second Degree Network */}
-        {(stats.secondDegreeRealCount > 0 || stats.secondDegreeNotRealCount > 0) && (
+        {(stats.secondDegreeRealCount > 0 || stats.secondDegreeNotRealCount > 0 || stats.secondDegreePrivateCount > 0) && (
           <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -225,13 +240,21 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 text-xs">
-              <Badge className="bg-green-600 hover:bg-green-700">
-                ✓ {stats.secondDegreeRealCount}
-              </Badge>
+            <div className="flex gap-2 text-xs flex-wrap">
+              {stats.secondDegreeRealCount > 0 && (
+                <Badge className="bg-green-600 hover:bg-green-700">
+                  ✓ {stats.secondDegreeRealCount}
+                </Badge>
+              )}
               {stats.secondDegreeNotRealCount > 0 && (
                 <Badge variant="destructive">
                   ✗ {stats.secondDegreeNotRealCount}
+                </Badge>
+              )}
+              {stats.secondDegreePrivateCount > 0 && (
+                <Badge className="bg-gray-700 hover:bg-gray-800">
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  {stats.secondDegreePrivateCount}
                 </Badge>
               )}
             </div>
@@ -239,7 +262,7 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
         )}
 
         {/* Level 4: Third Degree Network */}
-        {(stats.thirdDegreeRealCount > 0 || stats.thirdDegreeNotRealCount > 0) && (
+        {(stats.thirdDegreeRealCount > 0 || stats.thirdDegreeNotRealCount > 0 || stats.thirdDegreePrivateCount > 0) && (
           <div className="bg-orange-50 dark:bg-orange-950/30 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -249,13 +272,21 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 text-xs">
-              <Badge className="bg-green-600 hover:bg-green-700">
-                ✓ {stats.thirdDegreeRealCount}
-              </Badge>
+            <div className="flex gap-2 text-xs flex-wrap">
+              {stats.thirdDegreeRealCount > 0 && (
+                <Badge className="bg-green-600 hover:bg-green-700">
+                  ✓ {stats.thirdDegreeRealCount}
+                </Badge>
+              )}
               {stats.thirdDegreeNotRealCount > 0 && (
                 <Badge variant="destructive">
                   ✗ {stats.thirdDegreeNotRealCount}
+                </Badge>
+              )}
+              {stats.thirdDegreePrivateCount > 0 && (
+                <Badge className="bg-gray-700 hover:bg-gray-800">
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  {stats.thirdDegreePrivateCount}
                 </Badge>
               )}
             </div>
@@ -263,7 +294,7 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
         )}
 
         {/* Level 5: Fourth Degree Network */}
-        {(stats.fourthDegreeRealCount > 0 || stats.fourthDegreeNotRealCount > 0) && (
+        {(stats.fourthDegreeRealCount > 0 || stats.fourthDegreeNotRealCount > 0 || stats.fourthDegreePrivateCount > 0) && (
           <div className="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-lg border border-rose-200 dark:border-rose-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -273,13 +304,21 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 text-xs">
-              <Badge className="bg-green-600 hover:bg-green-700">
-                ✓ {stats.fourthDegreeRealCount}
-              </Badge>
+            <div className="flex gap-2 text-xs flex-wrap">
+              {stats.fourthDegreeRealCount > 0 && (
+                <Badge className="bg-green-600 hover:bg-green-700">
+                  ✓ {stats.fourthDegreeRealCount}
+                </Badge>
+              )}
               {stats.fourthDegreeNotRealCount > 0 && (
                 <Badge variant="destructive">
                   ✗ {stats.fourthDegreeNotRealCount}
+                </Badge>
+              )}
+              {stats.fourthDegreePrivateCount > 0 && (
+                <Badge className="bg-gray-700 hover:bg-gray-800">
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  {stats.fourthDegreePrivateCount}
                 </Badge>
               )}
             </div>
@@ -293,17 +332,25 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold">6</div>
                 <span className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                  Łączne weryfikacje
+                  Łączne weryfikacje z całej sieci
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 text-xs">
-              <Badge className="bg-green-600 hover:bg-green-700">
-                ✓ {stats.realCount} realnych
-              </Badge>
+            <div className="flex gap-2 text-xs flex-wrap">
+              {stats.realCount > 0 && (
+                <Badge className="bg-green-600 hover:bg-green-700">
+                  ✓ {stats.realCount} realnych
+                </Badge>
+              )}
               {stats.notRealCount > 0 && (
                 <Badge variant="destructive">
                   ✗ {stats.notRealCount} nierealnych
+                </Badge>
+              )}
+              {stats.privateCount > 0 && (
+                <Badge className="bg-gray-700 hover:bg-gray-800">
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  {stats.privateCount} prywatnych
                 </Badge>
               )}
             </div>
