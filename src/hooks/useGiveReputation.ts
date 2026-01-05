@@ -39,12 +39,13 @@ export function useGiveReputation() {
       try {
         setIsGeneratingProof(true);
 
-        // Get user's private key for proof generation
-        const privkey = await user.signer.getPublicKey(); // We'll use pubkey as seed
+        // For ZK-proof, we use the user's pubkey as deterministic seed
+        // This ensures same Semaphore identity across sessions
+        const userPubkey = user.pubkey;
 
         // Generate ZK proof
         const proof = await generatePrivateVerificationProof(
-          privkey,
+          userPubkey,
           targetPubkey,
           verifiedPubkeys
         );
