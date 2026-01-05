@@ -46,19 +46,24 @@ export function useReputation(pubkey: string) {
     queryFn: async (c) => {
       if (!pubkey || pubkey.length === 0) return [];
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
-      // Query both public (4101) and private (4102) verifications
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          '#p': [pubkey],
-          limit: 200
-        }],
-        { signal }
-      );
+        // Query both public (4101) and private (4102) verifications
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            '#p': [pubkey],
+            limit: 200
+          }],
+          { signal }
+        );
 
-      return events.filter(validateReputationEvent);
+        return events.filter(validateReputationEvent);
+      } catch (error) {
+        console.warn('Failed to fetch reputation:', error);
+        return [];
+      }
     },
     enabled: !!pubkey && pubkey.length > 0,
     staleTime: 30000, // Cache for 30 seconds
@@ -71,26 +76,31 @@ export function useMyReputation(targetPubkey: string, myPubkey?: string) {
   return useQuery({
     queryKey: ['my-reputation', targetPubkey, myPubkey],
     queryFn: async (c) => {
-      if (!myPubkey) return null;
+      if (!myPubkey || myPubkey.length === 0) return null;
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(2000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(2000)]);
 
-      // Query both public and private verifications
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          authors: [myPubkey],
-          '#p': [targetPubkey],
-          limit: 2 // May have both public and private
-        }],
-        { signal }
-      );
+        // Query both public and private verifications
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            authors: [myPubkey],
+            '#p': [targetPubkey],
+            limit: 2 // May have both public and private
+          }],
+          { signal }
+        );
 
-      const validEvents = events.filter(validateReputationEvent);
-      // Prefer public over private for display
-      return validEvents.find(e => e.kind === 4101) || validEvents[0] || null;
+        const validEvents = events.filter(validateReputationEvent);
+        // Prefer public over private for display
+        return validEvents.find(e => e.kind === 4101) || validEvents[0] || null;
+      } catch (error) {
+        console.warn('Failed to fetch my reputation:', error);
+        return null;
+      }
     },
-    enabled: !!myPubkey,
+    enabled: !!myPubkey && myPubkey.length > 0,
     staleTime: 30000,
   });
 }
@@ -103,19 +113,24 @@ export function useTrustedReputation(targetPubkey: string, trustedPubkeys: strin
     queryFn: async (c) => {
       if (trustedPubkeys.length === 0) return [];
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          authors: trustedPubkeys,
-          '#p': [targetPubkey],
-          limit: 100
-        }],
-        { signal }
-      );
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            authors: trustedPubkeys,
+            '#p': [targetPubkey],
+            limit: 100
+          }],
+          { signal }
+        );
 
-      return events.filter(validateReputationEvent);
+        return events.filter(validateReputationEvent);
+      } catch (error) {
+        console.warn('Failed to fetch trusted reputation:', error);
+        return [];
+      }
     },
     enabled: trustedPubkeys.length > 0,
     staleTime: 30000,
@@ -130,19 +145,24 @@ export function useSecondDegreeReputation(targetPubkey: string, secondDegreePubk
     queryFn: async (c) => {
       if (secondDegreePubkeys.length === 0) return [];
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          authors: secondDegreePubkeys,
-          '#p': [targetPubkey],
-          limit: 100
-        }],
-        { signal }
-      );
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            authors: secondDegreePubkeys,
+            '#p': [targetPubkey],
+            limit: 100
+          }],
+          { signal }
+        );
 
-      return events.filter(validateReputationEvent);
+        return events.filter(validateReputationEvent);
+      } catch (error) {
+        console.warn('Failed to fetch second degree reputation:', error);
+        return [];
+      }
     },
     enabled: secondDegreePubkeys.length > 0,
     staleTime: 30000,
@@ -157,19 +177,24 @@ export function useThirdDegreeReputation(targetPubkey: string, thirdDegreePubkey
     queryFn: async (c) => {
       if (thirdDegreePubkeys.length === 0) return [];
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          authors: thirdDegreePubkeys,
-          '#p': [targetPubkey],
-          limit: 100
-        }],
-        { signal }
-      );
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            authors: thirdDegreePubkeys,
+            '#p': [targetPubkey],
+            limit: 100
+          }],
+          { signal }
+        );
 
-      return events.filter(validateReputationEvent);
+        return events.filter(validateReputationEvent);
+      } catch (error) {
+        console.warn('Failed to fetch third degree reputation:', error);
+        return [];
+      }
     },
     enabled: thirdDegreePubkeys.length > 0,
     staleTime: 30000,
@@ -184,19 +209,24 @@ export function useFourthDegreeReputation(targetPubkey: string, fourthDegreePubk
     queryFn: async (c) => {
       if (fourthDegreePubkeys.length === 0) return [];
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          authors: fourthDegreePubkeys,
-          '#p': [targetPubkey],
-          limit: 100
-        }],
-        { signal }
-      );
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            authors: fourthDegreePubkeys,
+            '#p': [targetPubkey],
+            limit: 100
+          }],
+          { signal }
+        );
 
-      return events.filter(validateReputationEvent);
+        return events.filter(validateReputationEvent);
+      } catch (error) {
+        console.warn('Failed to fetch fourth degree reputation:', error);
+        return [];
+      }
     },
     enabled: fourthDegreePubkeys.length > 0,
     staleTime: 30000,
@@ -211,18 +241,23 @@ export function useReputationGivenBy(authorPubkey: string) {
     queryFn: async (c) => {
       if (!authorPubkey || authorPubkey.length === 0) return [];
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          authors: [authorPubkey],
-          limit: 100
-        }],
-        { signal }
-      );
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            authors: [authorPubkey],
+            limit: 100
+          }],
+          { signal }
+        );
 
-      return events.filter(validateReputationEvent);
+        return events.filter(validateReputationEvent);
+      } catch (error) {
+        console.warn('Failed to fetch reputations given by author:', error);
+        return [];
+      }
     },
     enabled: !!authorPubkey && authorPubkey.length > 0,
     staleTime: 60000,
@@ -237,18 +272,23 @@ export function useReputationsGivenByMultiple(authorPubkeys: string[]) {
     queryFn: async (c) => {
       if (authorPubkeys.length === 0) return [];
 
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(5000)]);
+      try {
+        const signal = AbortSignal.any([c.signal, AbortSignal.timeout(5000)]);
 
-      const events = await nostr.query(
-        [{
-          kinds: [4101, 4102],
-          authors: authorPubkeys,
-          limit: 500
-        }],
-        { signal }
-      );
+        const events = await nostr.query(
+          [{
+            kinds: [4101, 4102],
+            authors: authorPubkeys,
+            limit: 500
+          }],
+          { signal }
+        );
 
-      return events.filter(validateReputationEvent);
+        return events.filter(validateReputationEvent);
+      } catch (error) {
+        console.warn('Failed to fetch reputations from multiple authors:', error);
+        return [];
+      }
     },
     enabled: authorPubkeys.length > 0,
     staleTime: 60000,
