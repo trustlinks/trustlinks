@@ -27,6 +27,11 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: 60000, // 1 minute
       gcTime: Infinity,
+      retry: 1, // Retry failed queries once
+      retryDelay: 1000,
+    },
+    mutations: {
+      retry: false, // Don't retry mutations
     },
   },
 });

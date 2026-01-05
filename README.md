@@ -81,7 +81,10 @@ Weryfikacja jest binarna - prosta i czytelna:
    - **Komentarz** wyjaśniający weryfikację
 5. Kliknij "Zweryfikuj użytkownika"
 
-**Uwaga o prywatności:** Aby utworzyć prywatną weryfikację, musisz mieć co najmniej 1 zweryfikowaną osobę w swojej sieci (potrzebna do utworzenia grupy ZK-proof).
+**Uwaga o prywatności:**
+- Aby utworzyć prywatną weryfikację, musisz mieć co najmniej 1 zweryfikowaną osobę w swojej sieci (potrzebna do utworzenia grupy ZK-proof)
+- Generowanie ZK-proof trwa 3-5 sekund
+- Jeśli przeglądarka nie wspiera ZK-proof (problemy z WASM), użyj trybu publicznego
 
 ### Przeglądanie reputacji
 
