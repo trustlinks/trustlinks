@@ -36,41 +36,50 @@ export function useGiveReputation() {
           throw new Error('Cannot create private verification: no verified connections in your network');
         }
 
-        // For ZK-proof, we use the user's pubkey as deterministic seed
-        const userPubkey = user.pubkey;
+        try {
+          // For ZK-proof, we use the user's pubkey as deterministic seed
+          const userPubkey = user.pubkey;
 
-        // Generate ZK proof
-        const proof = await generatePrivateVerificationProof(
-          userPubkey,
-          targetPubkey,
-          verifiedPubkeys
-        );
+          // Generate ZK proof
+          const proof = await generatePrivateVerificationProof(
+            userPubkey,
+            targetPubkey,
+            verifiedPubkeys
+          );
 
-        // Get merkle root for verification
-        const merkleRoot = getGroupRoot(verifiedPubkeys);
+          // Get merkle root for verification
+          const merkleRoot = getGroupRoot(verifiedPubkeys);
 
-        const tags: string[][] = [
-          ['p', targetPubkey],
-          ['proof', JSON.stringify(proof)],
-          ['merkle_root', merkleRoot.toString()],
-        ];
+          const tags: string[][] = [
+            ['p', targetPubkey],
+            ['proof', JSON.stringify(proof)],
+            ['merkle_root', merkleRoot.toString()],
+          ];
 
-        if (tag) {
-          tags.push(['t', tag]);
+          if (tag) {
+            tags.push(['t', tag]);
+          }
+
+          if (context) {
+            tags.push(['context', context]);
+          }
+
+          const event: UnsignedEvent = {
+            kind: 4102, // Private verification
+            content: comment || '',
+            tags,
+            created_at: Math.floor(Date.now() / 1000),
+          };
+
+          await createEvent(event);
+        } catch (error) {
+          console.error('Private verification error:', error);
+          throw new Error(
+            error instanceof Error
+              ? error.message
+              : 'Failed to create private verification. Try using public mode instead.'
+          );
         }
-
-        if (context) {
-          tags.push(['context', context]);
-        }
-
-        const event: UnsignedEvent = {
-          kind: 4102, // Private verification
-          content: comment || '',
-          tags,
-          created_at: Math.floor(Date.now() / 1000),
-        };
-
-        await createEvent(event);
       } else {
         // Public verification
         const tags: string[][] = [
