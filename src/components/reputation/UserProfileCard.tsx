@@ -25,12 +25,15 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
   const { data: myGivenReputations } = useReputationGivenBy(user?.pubkey || '');
 
-  // Level 1: People I directly verified as real (rating === 1)
+  // Level 1: People I directly verified as real (rating === 1 or private)
   const trustedPubkeys = useMemo(() => {
     return (myGivenReputations || [])
       .filter(event => {
+        // Include private verifications (kind 4102)
+        if (event.kind === 4102) return true;
+        // Include public verifications with rating === 1
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating === 1; // Only "real" ratings
+        return rating === 1;
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk);
@@ -46,8 +49,11 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
     return trustedNetworkReputations
       .filter(event => {
+        // Include private verifications
+        if (event.kind === 4102) return true;
+        // Include public "real" ratings
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating === 1; // Only "real" ratings
+        return rating === 1;
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk && !trustedPubkeys.includes(pk) && pk !== user?.pubkey);
@@ -65,8 +71,11 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
     return secondDegreeNetworkReputations
       .filter(event => {
+        // Include private verifications
+        if (event.kind === 4102) return true;
+        // Include public "real" ratings
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating === 1; // Only "real" ratings
+        return rating === 1;
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk && !allPreviousPubkeys.includes(pk) && pk !== user?.pubkey);
@@ -84,8 +93,11 @@ export function UserProfileCard({ pubkey, showGiveReputationButton = false }: Us
 
     return thirdDegreeNetworkReputations
       .filter(event => {
+        // Include private verifications
+        if (event.kind === 4102) return true;
+        // Include public "real" ratings
         const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        return rating === 1; // Only "real" ratings
+        return rating === 1;
       })
       .map(event => event.tags.find(([name]) => name === 'p')?.[1])
       .filter((pk): pk is string => !!pk && !allPreviousPubkeys.includes(pk) && pk !== user?.pubkey);

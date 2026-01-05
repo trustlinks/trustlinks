@@ -316,12 +316,15 @@ export function calculateReputationStats(
     trustedReputations.forEach(event => {
       if (event.kind === 4102) {
         trustedPrivateCount++;
-      } else {
-        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        if (rating === 1) {
-          trustedRealCount++;
-        } else {
-          trustedNotRealCount++;
+      } else if (event.kind === 4101) {
+        const ratingTag = event.tags.find(([name]) => name === 'rating');
+        if (ratingTag && ratingTag[1]) {
+          const rating = parseInt(ratingTag[1]);
+          if (rating === 1) {
+            trustedRealCount++;
+          } else {
+            trustedNotRealCount++;
+          }
         }
       }
     });
@@ -334,12 +337,15 @@ export function calculateReputationStats(
     secondDegreeReputations.forEach(event => {
       if (event.kind === 4102) {
         secondDegreePrivateCount++;
-      } else {
-        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        if (rating === 1) {
-          secondDegreeRealCount++;
-        } else {
-          secondDegreeNotRealCount++;
+      } else if (event.kind === 4101) {
+        const ratingTag = event.tags.find(([name]) => name === 'rating');
+        if (ratingTag && ratingTag[1]) {
+          const rating = parseInt(ratingTag[1]);
+          if (rating === 1) {
+            secondDegreeRealCount++;
+          } else {
+            secondDegreeNotRealCount++;
+          }
         }
       }
     });
@@ -352,12 +358,15 @@ export function calculateReputationStats(
     thirdDegreeReputations.forEach(event => {
       if (event.kind === 4102) {
         thirdDegreePrivateCount++;
-      } else {
-        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        if (rating === 1) {
-          thirdDegreeRealCount++;
-        } else {
-          thirdDegreeNotRealCount++;
+      } else if (event.kind === 4101) {
+        const ratingTag = event.tags.find(([name]) => name === 'rating');
+        if (ratingTag && ratingTag[1]) {
+          const rating = parseInt(ratingTag[1]);
+          if (rating === 1) {
+            thirdDegreeRealCount++;
+          } else {
+            thirdDegreeNotRealCount++;
+          }
         }
       }
     });
@@ -370,12 +379,15 @@ export function calculateReputationStats(
     fourthDegreeReputations.forEach(event => {
       if (event.kind === 4102) {
         fourthDegreePrivateCount++;
-      } else {
-        const rating = parseInt(event.tags.find(([name]) => name === 'rating')?.[1] || '0');
-        if (rating === 1) {
-          fourthDegreeRealCount++;
-        } else {
-          fourthDegreeNotRealCount++;
+      } else if (event.kind === 4101) {
+        const ratingTag = event.tags.find(([name]) => name === 'rating');
+        if (ratingTag && ratingTag[1]) {
+          const rating = parseInt(ratingTag[1]);
+          if (rating === 1) {
+            fourthDegreeRealCount++;
+          } else {
+            fourthDegreeNotRealCount++;
+          }
         }
       }
     });
