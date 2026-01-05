@@ -44,6 +44,8 @@ export function useReputation(pubkey: string) {
   return useQuery({
     queryKey: ['reputation', pubkey],
     queryFn: async (c) => {
+      if (!pubkey) return [];
+
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
       // Query both public (4101) and private (4102) verifications
@@ -58,6 +60,7 @@ export function useReputation(pubkey: string) {
 
       return events.filter(validateReputationEvent);
     },
+    enabled: !!pubkey,
     staleTime: 30000, // Cache for 30 seconds
   });
 }
@@ -206,6 +209,8 @@ export function useReputationGivenBy(authorPubkey: string) {
   return useQuery({
     queryKey: ['reputation-given-by', authorPubkey],
     queryFn: async (c) => {
+      if (!authorPubkey) return [];
+
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
       const events = await nostr.query(
@@ -219,6 +224,7 @@ export function useReputationGivenBy(authorPubkey: string) {
 
       return events.filter(validateReputationEvent);
     },
+    enabled: !!authorPubkey,
     staleTime: 60000,
   });
 }
