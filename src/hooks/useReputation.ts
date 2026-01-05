@@ -44,7 +44,7 @@ export function useReputation(pubkey: string) {
   return useQuery({
     queryKey: ['reputation', pubkey],
     queryFn: async (c) => {
-      if (!pubkey) return [];
+      if (!pubkey || pubkey.length === 0) return [];
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
@@ -60,7 +60,7 @@ export function useReputation(pubkey: string) {
 
       return events.filter(validateReputationEvent);
     },
-    enabled: !!pubkey,
+    enabled: !!pubkey && pubkey.length > 0,
     staleTime: 30000, // Cache for 30 seconds
   });
 }
@@ -209,7 +209,7 @@ export function useReputationGivenBy(authorPubkey: string) {
   return useQuery({
     queryKey: ['reputation-given-by', authorPubkey],
     queryFn: async (c) => {
-      if (!authorPubkey) return [];
+      if (!authorPubkey || authorPubkey.length === 0) return [];
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
@@ -224,7 +224,7 @@ export function useReputationGivenBy(authorPubkey: string) {
 
       return events.filter(validateReputationEvent);
     },
-    enabled: !!authorPubkey,
+    enabled: !!authorPubkey && authorPubkey.length > 0,
     staleTime: 60000,
   });
 }
