@@ -45,6 +45,7 @@
     "@semaphore-protocol/group": "^4.14.0",
     "@semaphore-protocol/identity": "^4.14.0",
     "@semaphore-protocol/proof": "^4.14.0",
+    "@semaphore-protocol/utils": "^4.14.0",
     "@tanstack/react-query": "^5.56.2",
     "@unhead/addons": "^2.0.10",
     "@unhead/react": "^2.0.10",
