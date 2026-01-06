@@ -49,6 +49,7 @@
     "@tanstack/react-query": "^5.56.2",
     "@unhead/addons": "^2.0.10",
     "@unhead/react": "^2.0.10",
+    "@zk-kit/artifacts": "^2.0.1",
     "@zk-kit/baby-jubjub": "^1.0.3",
     "@zk-kit/eddsa-poseidon": "^1.1.0",
     "@zk-kit/lean-imt": "^2.2.4",
